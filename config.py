@@ -1,9 +1,16 @@
 import os
 
-class Config:
-    SECRET_KEY = "automated_code_review_secret_key"
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
-    SQLALCHEMY_DATABASE_URI = "sqlite:///code_review.db"
+
+class Config:
+
+    SECRET_KEY = "change_this_to_a_secret_key"
+
+    SQLALCHEMY_DATABASE_URI = (
+        "sqlite:///" +
+        os.path.join(BASE_DIR, "code_review.db")
+    )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
