@@ -1,5 +1,8 @@
-from flask import render_template
+
+from flask import render_template, redirect, url_for, flash
 from . import auth_bp
+from .forms import RegisterForm
+from .services import register_user
 
 
 @auth_bp.route("/")
@@ -7,9 +10,28 @@ def home():
     return render_template("home.html")
 
 
-@auth_bp.route("/register")
+
+@auth_bp.route("/register", methods=["GET", "POST"])
 def register():
-    return render_template("auth/register.html")
+
+    form = RegisterForm()
+
+    if form.validate_on_submit():
+
+        register_user(
+            form.username.data,
+            form.email.data,
+            form.password.data
+        )
+
+        flash("Registration successful! Please login.", "success")
+
+        return redirect(url_for("auth.login"))
+
+    return render_template(
+        "auth/register.html",
+        form=form
+    )
 
 
 @auth_bp.route("/login")
