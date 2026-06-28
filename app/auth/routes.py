@@ -3,6 +3,8 @@ from flask import render_template, redirect, url_for, flash
 from . import auth_bp
 from .forms import RegisterForm
 from .services import register_user
+from .forms import LoginForm
+from .services import login_user_service
 
 
 @auth_bp.route("/")
@@ -34,6 +36,27 @@ def register():
     )
 
 
-@auth_bp.route("/login")
+@auth_bp.route("/login", methods=["GET", "POST"])
 def login():
-    return render_template("auth/login.html")
+
+    form = LoginForm()
+
+    if form.validate_on_submit():
+
+        success = login_user_service(
+            form.email.data,
+            form.password.data
+        )
+
+        if success:
+
+            flash("Login successful!", "success")
+
+            return redirect(url_for("dashboard.dashboard"))
+
+        flash("Invalid email or password", "danger")
+
+    return render_template(
+        "auth/login.html",
+        form=form
+    )

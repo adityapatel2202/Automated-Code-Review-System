@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_migrate import Migrate
@@ -28,7 +28,10 @@ def create_app():
     migrate.init_app(app, db)
 
     from .auth import auth_bp
-
+    
     app.register_blueprint(auth_bp)
+
+    from .dashboard import dashboard_bp
+    app.register_blueprint(dashboard_bp)
     
     return app
