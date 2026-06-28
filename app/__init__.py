@@ -7,6 +7,15 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 migrate = Migrate()
 
+login_manager.login_view = "auth.login"
+login_manager.login_message_category = "warning"
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    from app.models.user import User
+    return User.query.get(int(user_id))
+
 
 def create_app():
 
@@ -19,8 +28,8 @@ def create_app():
     migrate.init_app(app, db)
 
     from .auth import auth_bp
-    app.register_blueprint(auth_bp)
 
-    from .models.user import User
+    app.register_blueprint(auth_bp)
+    
 
     return app
