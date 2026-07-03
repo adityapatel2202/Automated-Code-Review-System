@@ -5,6 +5,8 @@ from .forms import RegisterForm
 from .services import register_user
 from .forms import LoginForm
 from .services import login_user_service
+from flask_login import logout_user, current_user
+from flask_login import login_required
 
 
 @auth_bp.route("/")
@@ -39,9 +41,11 @@ def register():
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
 
+    # If user is already logged in, go to dashboard
+    if current_user.is_authenticated:
+        return redirect(url_for("dashboard.dashboard"))
+
     form = LoginForm()
- if current_user.is_authenticated:
-    return redirect(url_for("dashboard.dashboard"))   
 
     if form.validate_on_submit():
 
@@ -51,9 +55,7 @@ def login():
         )
 
         if success:
-
             flash("Login successful!", "success")
-
             return redirect(url_for("dashboard.dashboard"))
 
         flash("Invalid email or password", "danger")
@@ -62,3 +64,13 @@ def login():
         "auth/login.html",
         form=form
     )
+
+@auth_bp.route("/logout")
+@login_required
+def logout():
+
+    logout_user()
+
+    flash("Logged out successfully.", "info")
+
+    return redirect(url_for("auth.login"))

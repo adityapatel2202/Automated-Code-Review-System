@@ -1,0 +1,56 @@
+{% extends "layout/base.html" %}
+
+{% block title %}
+Upload Python File
+{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5">
+
+<div class="card shadow">
+
+<div class="card-header bg-primary text-white">
+
+<h3>Upload Python File</h3>
+
+</div>
+
+<div class="card-body">
+
+<h5>Select a Python (.py) file for analysis.</h5>
+
+<hr>
+
+<form>
+
+<div class="mb-3">
+
+<label class="form-label">
+
+Choose Python File
+
+</label>
+
+<input
+type="file"
+class="form-control">
+
+</div>
+
+<button
+class="btn btn-success">
+
+Upload
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+{% endblock %}

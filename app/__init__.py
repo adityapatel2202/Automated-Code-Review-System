@@ -33,5 +33,8 @@ def create_app():
 
     from .dashboard import dashboard_bp
     app.register_blueprint(dashboard_bp)
+
+    from .upload import upload_bp
+    app.register_blueprint(upload_bp)
     
     return app
