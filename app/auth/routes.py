@@ -40,6 +40,8 @@ def register():
 def login():
 
     form = LoginForm()
+ if current_user.is_authenticated:
+    return redirect(url_for("dashboard.dashboard"))   
 
     if form.validate_on_submit():
 
