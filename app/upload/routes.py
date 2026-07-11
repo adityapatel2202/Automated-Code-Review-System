@@ -1,7 +1,9 @@
 from flask import (
     render_template,
     current_app,
-    flash
+    flash,
+    redirect,
+    url_for
 )
 
 from flask_login import login_required
@@ -29,6 +31,13 @@ def upload():
             flash(
                 f"{filename} uploaded successfully!",
                 "success"
+            )
+
+            return redirect(
+                url_for(
+                    "reports.result",
+                    filename=filename
+                )
             )
 
         else:

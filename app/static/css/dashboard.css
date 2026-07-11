@@ -1,0 +1,61 @@
+body{
+    background:#f4f6f9;
+    font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;
+}
+
+.dashboard-card{
+    border:none;
+    border-radius:15px;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+    margin-bottom:20px;
+}
+
+.metric-card{
+    text-align:center;
+    padding:20px;
+    border-radius:12px;
+    color:white;
+}
+
+.metric-number{
+    font-size:34px;
+    font-weight:bold;
+}
+
+.metric-title{
+    font-size:15px;
+}
+
+.quality-card{
+    text-align:center;
+    padding:30px;
+}
+
+.progress{
+    height:20px;
+    border-radius:30px;
+}
+
+.issue-item{
+    padding:10px;
+    border-left:5px solid #dc3545;
+    background:#fff;
+    margin-bottom:10px;
+    border-radius:6px;
+}
+
+.suggestion-item{
+    padding:10px;
+    border-left:5px solid #198754;
+    background:#fff;
+    margin-bottom:10px;
+    border-radius:6px;
+}
+
+.code-box{
+    background:#0d1117;
+    color:#f8f8f2;
+    padding:20px;
+    border-radius:10px;
+    overflow:auto;
+}

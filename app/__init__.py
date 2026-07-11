@@ -37,4 +37,7 @@ def create_app():
     from .upload import upload_bp
     app.register_blueprint(upload_bp)
     
+    from .reports import reports_bp
+    app.register_blueprint(reports_bp)
+    
     return app
