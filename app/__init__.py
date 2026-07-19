@@ -39,5 +39,8 @@ def create_app():
     
     from .reports import reports_bp
     app.register_blueprint(reports_bp)
-    
+
+    from .prediction import prediction_bp
+    app.register_blueprint(prediction_bp)
+
     return app

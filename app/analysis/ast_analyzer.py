@@ -12,7 +12,17 @@ class ASTAnalyzer:
             tree = ast.parse(source)
         except SyntaxError:
             return {
-                "syntax_error": True
+                 "functions": 0,
+                 "classes": 0,
+                 "imports": 0,
+                 "loops": 0,
+                 "variables": 0,
+                 "if_statements": 0,
+                 "try_blocks": 0,
+                 "returns": 0,
+                 "function_calls": 0,
+                 "comments": 0,
+                 "syntax_error": True
             }
 
         result = {

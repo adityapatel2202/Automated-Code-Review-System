@@ -1,30 +1,133 @@
 {% extends "layout/base.html" %}
 
-{% block title %}
-Dashboard
-{% endblock %}
+{% block title %}Dashboard - Automated Code Review{% endblock %}
 
 {% block content %}
+<div class="container mt-4">
+    <!-- Welcome Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>📊 Review Dashboard</h2>
+            <p class="text-muted">Welcome back, <strong>{{ current_user.username }}</strong>! Here is an overview of your code reviews.</p>
+        </div>
+        <div>
+            <a href="/upload" class="btn btn-primary btn-lg shadow-sm">
+                📤 Upload Python File
+            </a>
+        </div>
+    </div>
 
-<div class="container mt-5">
+    <!-- Stats Cards Row -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-sm-6 mb-3">
+            <div class="card dashboard-card stat-card bg-gradient-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase mb-2 text-white-50">Total Reviews</h6>
+                    <h2 class="display-5 fw-bold mb-0">{{ stats.total_reviews }}</h2>
+                    <div class="mt-2 text-white-50"><small>Files analyzed</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<h2>Dashboard</h2>
 
-<hr>
+    <!-- Charts and Recent History Row -->
+    <div class="row">
+        <!-- Chart Section -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold">📈 Quality Score Trend</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="position: relative; height: 300px; width: 100%;">
+                        <canvas id="scoreTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-<h4>Welcome {{ current_user.username }} 👋</h4>
-
-<hr>
-
-<a href="/upload"
-class="btn btn-primary">
-
-Upload Python File
-
-</a>
-
-<p>You have successfully logged in.</p>
-
+        <!-- Recent Uploads Table -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold">⏱️ Recent Code Reviews</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if reviews %}
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="ps-4">Filename</th>
+                                        <th>Score</th>
+                                        <th>ML prediction</th>
+                                        <th class="pe-4 text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for review in reviews[:5] %}
+                                        <tr>
+                                            <td class="ps-4">
+                                                <div class="fw-semibold text-truncate" style="max-width: 180px;" title="{{ review.filename }}">
+                                                    {{ review.filename }}
+                                                </div>
+                                                <small class="text-muted">{{ review.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge {% if review.quality_score >= 85 %}bg-success{% elif review.quality_score >= 70 %}bg-primary{% elif review.quality_score >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ review.quality_score | round(0) }}%
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if review.ml_prediction %}
+                                                    <span class="badge {% if review.ml_prediction == 'Excellent' %}bg-success{% elif review.ml_prediction == 'Good' %}bg-primary{% elif review.ml_prediction == 'Average' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                        {{ review.ml_prediction }}
+                                                    </span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">N/A</span>
+                                                {% endif %}
+                                            </td>
+                                            <td class="pe-4 text-end">
+                                                <div class="btn-group" role="group">
+                                                    <a href="{{ url_for('reports.view_review', review_id=review.id) }}" class="btn btn-outline-primary btn-sm">
+                                                        View
+                                                    </a>
+                                                    <a href="{{ url_for('reports.download_report', review_id=review.id) }}" class="btn btn-outline-secondary btn-sm" title="Download Report">
+                                                        📥
+                                                    </a>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <p class="text-muted mb-0">No code reviews yet. Upload your first Python file!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
+<!-- Send database entries dynamically to JS using JSON script tag -->
+<script id="review-data" type="application/json">
+    [
+        {% for review in reviews | reverse %}
+            {
+                "date": "{{ review.created_at.strftime('%m/%d %H:%M') }}",
+                "score": {{ review.quality_score }},
+                "label": "{{ review.ml_prediction or 'Unknown' }}"
+            }{% if not loop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+
+<!-- Load Chart.js and Custom Script -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 {% endblock %}

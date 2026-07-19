@@ -16,32 +16,466 @@ Analysis Result
         </p>
     </div>
 
-    <!-- Quality Score -->
-    <div class="card dashboard-card quality-card">
+    <!-- Quality Score and ML Prediction Row -->
+    <div class="row">
+        <!-- Overall Quality Score (Static Analysis) -->
+        <div class="col-md-6 mb-4">
+            <div class="card dashboard-card quality-card h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h4 class="card-title">Overall Quality Score</h4>
+                        <h1 class="display-3 fw-bold mt-3 
+                            {% if result.quality_score >= 85 %}text-success
+                            {% elif result.quality_score >= 70 %}text-primary
+                            {% elif result.quality_score >= 50 %}text-warning
+                            {% else %}text-danger{% endif %}">
+                            {{ result.quality_score }} / 100
+                        </h1>
+                        <div class="progress mt-4" style="height: 12px;">
+                            <div class="progress-bar 
+                                {% if result.quality_score >= 85 %}bg-success
+                                {% elif result.quality_score >= 70 %}bg-primary
+                                {% elif result.quality_score >= 50 %}bg-warning
+                                {% else %}bg-danger{% endif %}"
+                                 style="width:{{ result.quality_score }}%;">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <span class="badge px-3 py-2 fs-6 
+                            {% if result.quality_score >= 85 %}bg-success
+                            {% elif result.quality_score >= 70 %}bg-primary
+                            {% elif result.quality_score >= 50 %}bg-warning
+                            {% else %}bg-danger{% endif %}">
+                            {% if result.quality_score >= 85 %}EXCELLENT QUALITY
+                            {% elif result.quality_score >= 70 %}GOOD QUALITY
+                            {% elif result.quality_score >= 50 %}AVERAGE QUALITY
+                            {% else %}POOR QUALITY{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-        <h4>Overall Quality Score</h4>
+        <!-- ML Quality Prediction (Random Forest) -->
+        <div class="col-md-6 mb-4">
+            <div class="card dashboard-card quality-card h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <h4 class="card-title">ML Predicted Quality</h4>
+                        {% if result.ml_prediction and result.ml_prediction.quality_label %}
+                            <h1 class="display-3 fw-bold mt-3
+                                {% if result.ml_prediction.quality_label == 'Excellent' %}text-success
+                                {% elif result.ml_prediction.quality_label == 'Good' %}text-primary
+                                {% elif result.ml_prediction.quality_label == 'Average' %}text-warning
+                                {% else %}text-danger{% endif %}">
+                                {{ result.ml_prediction.quality_label }}
+                            </h1>
+                            <p class="text-muted mt-3 mb-0">
+                                Confidence: <strong>{{ (result.ml_prediction.confidence * 100) | round(1) }}%</strong>
+                            </p>
+                        {% else %}
+                            <h1 class="display-4 text-muted mt-4">N/A</h1>
+                            <p class="text-muted mt-3 mb-0">Model prediction is not available.</p>
+                        {% endif %}
+                    </div>
+                    <div class="mt-4">
+                        <span class="badge px-3 py-2 fs-6 
+                            {% if result.ml_prediction and result.ml_prediction.quality_label == 'Excellent' %}bg-success
+                            {% elif result.ml_prediction and result.ml_prediction.quality_label == 'Good' %}bg-primary
+                            {% elif result.ml_prediction and result.ml_prediction.quality_label == 'Average' %}bg-warning
+                            {% elif result.ml_prediction and result.ml_prediction.quality_label == 'Poor' %}bg-danger
+                            {% else %}bg-secondary{% endif %}">
+                            RANDOM FOREST CLASSIFIER
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <h1 class="display-3 text-success">
-            {{ result.quality_score }} / 100
-        </h1>
+</div>
 
-        <div class="progress mt-4">
+<div class="row mt-4">
 
-            <div class="progress-bar bg-success"
-                 style="width:{{ result.quality_score }}%;">
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <h5>📦 Functions</h5>
+                <h2 class="text-primary">
+                    {{ result.ast_analysis.functions }}
+                </h2>
+            </div>
+        </div>
+    </div>
 
-                {{ result.quality_score }}%
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <h5>🏛️ Classes</h5>
+                <h2 class="text-success">
+                    {{ result.ast_analysis.classes }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <h5>🧮 Variables</h5>
+                <h2 class="text-warning">
+                    {{ result.ast_analysis.variables }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <h5>⚠️ Issues</h5>
+                <h2 class="text-danger">
+                    {{ result.issue_count }}
+                </h2>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- AST Analysis -->
+<div class="card dashboard-card mt-4">
+
+    <div class="card-header bg-primary text-white">
+        📊 AST Analysis
+    </div>
+
+    <div class="card-body">
+
+        <table class="table table-bordered align-middle">
+
+            <thead class="table-light">
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                <tr>
+                    <td>Functions</td>
+                    <td>{{ result.ast_analysis.functions }}</td>
+                </tr>
+
+                <tr>
+                    <td>Classes</td>
+                    <td>{{ result.ast_analysis.classes }}</td>
+                </tr>
+
+                <tr>
+                    <td>Variables</td>
+                    <td>{{ result.ast_analysis.variables }}</td>
+                </tr>
+
+                <tr>
+                    <td>Imports</td>
+                    <td>{{ result.ast_analysis.imports }}</td>
+                </tr>
+
+                <tr>
+                    <td>Loops</td>
+                    <td>{{ result.ast_analysis.loops }}</td>
+                </tr>
+
+                <tr>
+                    <td>If Statements</td>
+                    <td>{{ result.ast_analysis.if_statements }}</td>
+                </tr>
+
+                <tr>
+                    <td>Try Blocks</td>
+                    <td>{{ result.ast_analysis.try_blocks }}</td>
+                </tr>
+
+                <tr>
+                    <td>Returns</td>
+                    <td>{{ result.ast_analysis.returns }}</td>
+                </tr>
+
+                <tr>
+                    <td>Function Calls</td>
+                    <td>{{ result.ast_analysis.function_calls }}</td>
+                </tr>
+
+                <tr>
+                    <td>Comments</td>
+                    <td>{{ result.ast_analysis.comments }}</td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+<!-- Issues Found panel -->
+<div class="card dashboard-card mt-4">
+
+    <div class="card-header bg-danger text-white">
+        ⚠ Issues Found
+    </div>
+
+    <div class="card-body">
+
+        {% if result.issue_count == 0 %}
+
+            <div class="alert alert-success">
+                🎉 No issues found. Excellent code quality!
+            </div>
+
+        {% else %}
+
+        <table class="table table-hover table-bordered">
+
+            <thead class="table-light">
+
+                <tr>
+                    <th>#</th>
+                    <th>Type</th>
+                    <th>Message</th>
+                    <th>Line</th>
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+            {% for issue in result.issues_found %}
+
+                <tr>
+
+                    <td>{{ loop.index }}</td>
+
+                    <td>
+
+                        {% if issue.type == "error" %}
+                            <span class="badge bg-danger">Error</span>
+
+                        {% elif issue.type == "warning" %}
+                            <span class="badge bg-warning text-dark">Warning</span>
+
+                        {% else %}
+                            <span class="badge bg-info">Convention</span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>{{ issue.message }}</td>
+
+                    <td>{{ issue.line }}</td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+        {% endif %}
+
+    </div>
+
+</div>
+<!-- Suggestions panel -->
+<div class="card dashboard-card mt-4">
+
+    <div class="card-header bg-success text-white">
+        💡 Suggestions
+    </div>
+
+    <div class="card-body">
+
+        {% for suggestion in result.suggestions %}
+
+            <div class="alert alert-success">
+                ✅ {{ suggestion }}
+            </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+<!-- Semantic Analysis -->
+
+<div class="card dashboard-card mt-4">
+
+    <div class="card-header bg-info text-white">
+        🧠 Semantic Analysis (CodeBERT)
+    </div>
+
+    <div class="card-body">
+
+        <div class="row text-center">
+
+            <div class="col-md-3">
+
+                <h6>Embedding Dimension</h6>
+
+                <h3 class="text-primary">
+                    {{ result.semantic_analysis.embedding_dimension }}
+                </h3>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h6>Token Count</h6>
+
+                <h3 class="text-success">
+                    {{ result.semantic_analysis.token_count }}
+                </h3>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h6>Semantic Score</h6>
+
+                <h3 class="text-warning">
+                    {{ result.semantic_analysis.semantic_score }}
+                </h3>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <h6>Confidence</h6>
+
+                <h3 class="text-danger">
+                    {{ result.semantic_analysis.confidence }}
+                </h3>
 
             </div>
 
         </div>
 
-        <p class="mt-3 text-success fw-bold">
-            GOOD QUALITY
-        </p>
-
     </div>
 
+</div>
+
+<!-- AI Improved Code panel -->
+<div class="card dashboard-card mt-4">
+    <div class="card-header bg-gradient-primary text-white d-flex justify-content-between align-items-center py-3">
+        <h5 class="mb-0 fw-bold">🤖 AI Code Refactoring Assistant</h5>
+    </div>
+
+    <div class="card-body">
+        <!-- Tabs Nav -->
+        <ul class="nav nav-tabs mb-4" id="aiTabs" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-semibold" data-bs-toggle="tab" data-bs-target="#clean">
+                    🧹 Clean Code (PEP 8)
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#practice">
+                    💡 Best Practices
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-semibold" data-bs-toggle="tab" data-bs-target="#optimized">
+                    ⚡ Optimized Code
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tabs Content -->
+        <div class="tab-content">
+            <!-- Clean Code Tab -->
+            <div class="tab-pane fade show active" id="clean">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted mb-0">🧹 Clean & Formatted PEP 8 Code</h6>
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='clean') }}" class="btn btn-primary btn-sm fw-semibold">
+                        📥 Download Clean Code
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-success mb-2">Clean Version</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.ai_result.clean_code }}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Best Practice Tab -->
+            <div class="tab-pane fade" id="practice">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted mb-0">💡 Best Practices & Docstrings</h6>
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='best_practice') }}" class="btn btn-primary btn-sm fw-semibold">
+                        📥 Download Best Practice Code
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-primary mb-2">Best Practice Version</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.ai_result.best_practice }}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Optimized Tab -->
+            <div class="tab-pane fade" id="optimized">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-bold text-muted mb-0">⚡ Performance Optimized Code</h6>
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='optimized') }}" class="btn btn-primary btn-sm fw-semibold">
+                        📥 Download Optimized Code
+                    </a>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                    </div>
+                    <div class="col-lg-6 mb-3">
+                        <h6 class="fw-bold text-warning mb-2">Optimized Version</h6>
+                        <pre class="code-box"><code class="language-python">{{ result.ai_result.optimized_code }}</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Explanation of Refactorings -->
+        <h5 class="fw-bold mb-3 text-gradient-primary">📋 Proposed AI Refactoring Changes</h5>
+        <ul class="list-group list-group-flush">
+            {% for step in result.ai_result.changes %}
+                <li class="list-group-item border-0 ps-0 d-flex align-items-start mb-2">
+                    <span class="badge bg-success-subtle text-success border border-success-subtle me-2 px-2 py-1 fs-6">✓</span>
+                    <span class="fs-6">{{ step }}</span>
+                </li>
+            {% else %}
+                <li class="list-group-item border-0 ps-0 text-muted">
+                    Applied styling and best practices.
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
 </div>
 
 {% endblock %}
