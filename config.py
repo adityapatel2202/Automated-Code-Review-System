@@ -6,11 +6,11 @@ UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 
 class Config:
 
-    SECRET_KEY = "change_this_to_a_secret_key"
+    SECRET_KEY = os.environ.get("SECRET_KEY", "change_this_to_a_secret_key")
 
-    SQLALCHEMY_DATABASE_URI = (
-        "sqlite:///" +
-        os.path.join(BASE_DIR, "code_review.db")
+    SQLALCHEMY_DATABASE_URI = os.environ.get(
+        "DATABASE_URL",
+        "sqlite:///" + os.path.join(BASE_DIR, "code_review.db")
     )
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
