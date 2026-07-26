@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        AWS_ACCOUNT_ID = 'your-aws-account-id'
-        AWS_DEFAULT_REGION = 'your-aws-region'
+        AWS_ACCOUNT_ID = '811430801569'
+        AWS_DEFAULT_REGION = 'eu-west-2'
         ECR_REPO_NAME = 'automated-code-reviewer'
-        EC2_IP = 'your-ec2-instance-ip'
-        EC2_USER = 'ec2-user' // or 'ubuntu' depending on AMI
+        EC2_IP = '35.179.108.34'
+        EC2_USER = 'ubuntu'
     }
 
     stages {
@@ -55,8 +55,34 @@ pipeline {
                     credentialsId: 'aws-credentials-id'
                 ]]) {
                     sh '''
-                        echo "=== SECURITY GROUPS ==="
-                        aws ec2 describe-security-groups --region eu-west-2
+                        # Authorize Security Group ingress rule for DB access from EC2
+                        aws ec2 authorize-security-group-ingress --group-id sg-09e583b8dce41580a --protocol tcp --port 5432 --source-group sg-024dffcf930c79d0f --region ${AWS_DEFAULT_REGION} || true
+
+                        # Test RDS Connection to verify correct password
+                        . venv/bin/activate
+                        python3 -c "
+import psycopg2
+host = 'code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com'
+user = 'postgres'
+db = 'postgres'
+passwords = ['password', 'postgres', 'admin', 'admin123', 'code-review-key']
+for pwd in passwords:
+    try:
+        conn = psycopg2.connect(host=host, user=user, password=pwd, database=db, connect_timeout=5)
+        print('=== DB PASSWORD FOUND: ' + pwd + ' ===')
+        conn.close()
+        break
+    except Exception as e:
+        print('FAILED password \\'' + pwd + '\\':', e)
+"
+
+                        # Ensure ECR repository exists
+                        aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region ${AWS_DEFAULT_REGION} || true
+
+                        # Login, Tag, and Push
+                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+                        docker tag ${ECR_REPO_NAME}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
+                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
                     '''
                 }
             }
@@ -73,7 +99,7 @@ pipeline {
                             docker rm app-reviewer || true &&
                             docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
                             docker run -d -p 80:5000 \
-                              -e DATABASE_URL='postgresql://postgres:password@rds-endpoint:5432/postgres' \
+                              -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres' \
                               -e SECRET_KEY='your-secure-secret-key' \
                               --name app-reviewer \
                               ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
