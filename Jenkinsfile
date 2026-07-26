@@ -58,8 +58,25 @@ pipeline {
                         # Authorize Security Group ingress rule for DB access from EC2
                         aws ec2 authorize-security-group-ingress --group-id sg-09e583b8dce41580a --protocol tcp --port 5432 --source-group sg-024dffcf930c79d0f --region ${AWS_DEFAULT_REGION} || true
 
-                        # Modify RDS Database master password to 'password' to match the database connection string
-                        aws rds modify-db-instance --db-instance-identifier code-review-db --master-user-password 'password' --apply-immediately --region ${AWS_DEFAULT_REGION} || true
+                        # Modify RDS Database master password to 'password' using boto3 (workaround for AWS CLI Python 3.14 help parsing bug)
+                        . venv/bin/activate
+                        pip install boto3 --no-cache-dir
+                        python3 -c "
+import boto3
+try:
+    client = boto3.client('rds', region_name='${AWS_DEFAULT_REGION}')
+    client.modify_db_instance(
+        DBInstanceIdentifier='code-review-db',
+        MasterUserPassword='password',
+        ApplyImmediately=True
+    )
+    print('=== RDS MASTER PASSWORD MODIFIED VIA BOTO3 ===')
+except Exception as e:
+    print('FAILED to modify RDS password:', e)
+"
+                        # Sleep to allow RDS password modification to apply
+                        echo "Waiting 30 seconds for RDS password modification to propagate..."
+                        sleep 30
 
                         # Ensure ECR repository exists
                         aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region ${AWS_DEFAULT_REGION} || true
@@ -85,13 +102,13 @@ pipeline {
                             # Log EC2 Docker daemon into ECR using piped credentials from Jenkins
                             aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
 
-                            # Pull and run container on the EC2 host
+                            # Pull and run container on the EC2 host with SSL mode enabled for PostgreSQL
                             ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
                                 docker stop app-reviewer || true &&
                                 docker rm app-reviewer || true &&
                                 docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
                                 docker run -d -p 80:5000 \
-                                  -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres' \
+                                  -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres?sslmode=require' \
                                   -e SECRET_KEY='your-secure-secret-key' \
                                   --name app-reviewer \
                                   ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
