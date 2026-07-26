@@ -21,10 +21,9 @@ pipeline {
             steps {
                 echo 'Setting up Python virtual environment and installing requirements...'
                 sh '''
-                    python3 -m venv venv
+                    python3 -m venv --system-site-packages venv
                     . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+                    pip install -r requirements.txt --no-cache-dir
                 '''
             }
         }
