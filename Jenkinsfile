@@ -55,9 +55,10 @@ pipeline {
                     credentialsId: 'aws-credentials-id'
                 ]]) {
                     sh '''
-                        aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
-                        docker tag ${ECR_REPO_NAME}:latest ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
-                        docker push ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
+                        echo "=== AWS STS IDENTITY ==="
+                        aws sts get-caller-identity --region eu-west-2
+                        echo "=== AWS RDS DETAILS ==="
+                        aws rds describe-db-instances --region eu-west-2
                     '''
                 }
             }
