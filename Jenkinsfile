@@ -104,14 +104,14 @@ except Exception as e:
                     ]]) {
                         sh '''
                             # Log EC2 Docker daemon into ECR using piped credentials from Jenkins
-                            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+                            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "sudo docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
 
                             # Pull and run container on the EC2 host with SSL mode enabled for PostgreSQL
                             ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
-                                docker stop app-reviewer || true &&
-                                docker rm app-reviewer || true &&
-                                docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
-                                docker run -d -p 80:5000 \
+                                sudo docker stop app-reviewer || true &&
+                                sudo docker rm app-reviewer || true &&
+                                sudo docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
+                                sudo docker run -d -p 80:5000 \
                                   -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres?sslmode=require' \
                                   -e SECRET_KEY='your-secure-secret-key' \
                                   --name app-reviewer \
