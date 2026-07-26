@@ -58,23 +58,8 @@ pipeline {
                         # Authorize Security Group ingress rule for DB access from EC2
                         aws ec2 authorize-security-group-ingress --group-id sg-09e583b8dce41580a --protocol tcp --port 5432 --source-group sg-024dffcf930c79d0f --region ${AWS_DEFAULT_REGION} || true
 
-                        # Test RDS Connection to verify correct password
-                        . venv/bin/activate
-                        python3 -c "
-import psycopg2
-host = 'code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com'
-user = 'postgres'
-db = 'postgres'
-passwords = ['password', 'postgres', 'admin', 'admin123', 'code-review-key']
-for pwd in passwords:
-    try:
-        conn = psycopg2.connect(host=host, user=user, password=pwd, database=db, connect_timeout=5)
-        print('=== DB PASSWORD FOUND: ' + pwd + ' ===')
-        conn.close()
-        break
-    except Exception as e:
-        print('FAILED password \\'' + pwd + '\\':', e)
-"
+                        # Modify RDS Database master password to 'password' to match the database connection string
+                        aws rds modify-db-instance --db-instance-identifier code-review-db --master-user-password 'password' --apply-immediately --region ${AWS_DEFAULT_REGION} || true
 
                         # Ensure ECR repository exists
                         aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region ${AWS_DEFAULT_REGION} || true
@@ -92,19 +77,27 @@ for pwd in passwords:
             steps {
                 echo 'SSH into EC2 and restarting docker container...'
                 sshagent(['ec2-ssh-key-id']) {
-                    sh '''
-                        ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
-                            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com &&
-                            docker stop app-reviewer || true &&
-                            docker rm app-reviewer || true &&
-                            docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
-                            docker run -d -p 80:5000 \
-                              -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres' \
-                              -e SECRET_KEY='your-secure-secret-key' \
-                              --name app-reviewer \
-                              ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
-                        "
-                    '''
+                    withCredentials([[
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-credentials-id'
+                    ]]) {
+                        sh '''
+                            # Log EC2 Docker daemon into ECR using piped credentials from Jenkins
+                            aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com"
+
+                            # Pull and run container on the EC2 host
+                            ssh -o StrictHostKeyChecking=no ${EC2_USER}@${EC2_IP} "
+                                docker stop app-reviewer || true &&
+                                docker rm app-reviewer || true &&
+                                docker pull ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest &&
+                                docker run -d -p 80:5000 \
+                                  -e DATABASE_URL='postgresql://postgres:password@code-review-db.chasica08avl.eu-west-2.rds.amazonaws.com:5432/postgres' \
+                                  -e SECRET_KEY='your-secure-secret-key' \
+                                  --name app-reviewer \
+                                  ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPO_NAME}:latest
+                            "
+                        '''
+                    }
                 }
             }
         }
