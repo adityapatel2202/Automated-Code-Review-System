@@ -55,10 +55,8 @@ pipeline {
                     credentialsId: 'aws-credentials-id'
                 ]]) {
                     sh '''
-                        echo "=== AWS STS IDENTITY ==="
-                        aws sts get-caller-identity --region eu-west-2
-                        echo "=== AWS RDS DETAILS ==="
-                        aws rds describe-db-instances --region eu-west-2
+                        echo "=== SECURITY GROUPS ==="
+                        aws ec2 describe-security-groups --region eu-west-2
                     '''
                 }
             }
