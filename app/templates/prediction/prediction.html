@@ -1,0 +1,141 @@
+{% extends "layout/base.html" %}
+
+{% block title %}
+Quality Prediction
+{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow dashboard-card">
+                <div class="card-header bg-primary text-white text-center">
+                    <h3>ML Code Quality Predictor</h3>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted text-center">
+                        Select one of your uploaded Python files to predict its code quality label using the trained Random Forest classifier.
+                    </p>
+                    <hr>
+
+                    <form id="prediction-form" class="mt-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="mb-3">
+                            <label for="filename" class="form-label fw-bold">Select Python File</label>
+                            {% if filenames %}
+                                <select class="form-select" id="filename" name="filename" required>
+                                    <option value="" disabled selected>Choose a file...</option>
+                                    {% for name in filenames %}
+                                        <option value="{{ name }}">{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            {% else %}
+                                <div class="alert alert-warning">
+                                    No uploaded files found. Please <a href="/upload/">upload a file</a> first.
+                                </div>
+                                <select class="form-select" id="filename" name="filename" disabled required>
+                                    <option value="">No files available</option>
+                                </select>
+                            {% endif %}
+                        </div>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-success btn-lg" id="predict-btn" {% if not filenames %}disabled{% endif %}>
+                                Predict Quality
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Prediction Result Placeholder -->
+                    <div id="result-container" class="mt-5 d-none">
+                        <div class="card border-primary">
+                            <div class="card-body text-center">
+                                <h4 class="card-title text-primary">Prediction Result</h4>
+                                <hr>
+                                <div class="row mt-3">
+                                    <div class="col-6 border-end">
+                                        <p class="text-muted mb-1">Predicted Quality</p>
+                                        <h3 id="predicted-label" class="fw-bold">Excellent</h3>
+                                    </div>
+                                    <div class="col-6">
+                                        <p class="text-muted mb-1">Confidence Score</p>
+                                        <h3 id="prediction-confidence" class="fw-bold">85%</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Error Alert Placeholder -->
+                    <div id="error-container" class="alert alert-danger mt-4 d-none">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('prediction-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const filename = document.getElementById('filename').value;
+    const btn = document.getElementById('predict-btn');
+    const resultContainer = document.getElementById('result-container');
+    const errorContainer = document.getElementById('error-container');
+    
+    // Reset states
+    resultContainer.classList.add('d-none');
+    errorContainer.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = 'Analyzing...';
+    
+    fetch('/prediction/predict', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+        },
+        body: JSON.stringify({ filename: filename })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw new Error(err.error || 'Server error'); });
+        }
+        return response.json();
+    })
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = 'Predict Quality';
+        
+        if (data.success) {
+            const labelEl = document.getElementById('predicted-label');
+            const confEl = document.getElementById('prediction-confidence');
+            
+            labelEl.innerText = data.prediction;
+            confEl.innerText = (data.confidence * 100).toFixed(1) + '%';
+            
+            // Apply color classes
+            labelEl.className = 'fw-bold';
+            if (data.prediction.toLowerCase() === 'excellent') {
+                labelEl.classList.add('text-success');
+            } else if (data.prediction.toLowerCase() === 'good') {
+                labelEl.classList.add('text-primary');
+            } else if (data.prediction.toLowerCase() === 'average') {
+                labelEl.classList.add('text-warning');
+            } else {
+                labelEl.classList.add('text-danger');
+            }
+            
+            resultContainer.classList.remove('d-none');
+        }
+    })
+    .catch(error => {
+        btn.disabled = false;
+        btn.innerHTML = 'Predict Quality';
+        errorContainer.innerText = error.message;
+        errorContainer.classList.remove('d-none');
+    });
+});
+</script>
+{% endblock %}
