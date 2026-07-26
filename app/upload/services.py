@@ -16,6 +16,9 @@ def save_python_file(file, upload_folder):
 
         return None
 
+    # Ensure the upload folder exists
+    os.makedirs(upload_folder, exist_ok=True)
+
     filename = secure_filename(file.filename)
 
     filepath = os.path.join(
