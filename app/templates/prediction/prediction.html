@@ -19,7 +19,6 @@ Quality Prediction
                     <hr>
 
                     <form id="prediction-form" class="mt-4">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="mb-3">
                             <label for="filename" class="form-label fw-bold">Select Python File</label>
                             {% if filenames %}
@@ -93,8 +92,7 @@ document.getElementById('prediction-form').addEventListener('submit', function(e
     fetch('/prediction/predict', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+            'Content-Type': 'application/json'
         },
         body: JSON.stringify({ filename: filename })
     })
