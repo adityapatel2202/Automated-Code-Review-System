@@ -30,11 +30,12 @@ pipeline {
 
         stage('Run Tests') {
             steps {
-                echo 'Executing pytest suite...'
+                echo 'Executing verification scripts...'
                 sh '''
                     . venv/bin/activate
                     export PYTHONPATH=.
-                    python -m pytest test_ai.py test_dataset.py -v
+                    python test_ai.py
+                    python test_dataset_loader.py
                 '''
             }
         }
