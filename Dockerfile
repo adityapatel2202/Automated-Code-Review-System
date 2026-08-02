@@ -27,6 +27,6 @@ COPY . .
 # Expose port
 EXPOSE 5000
 
-# Run database setup and launch production server with gunicorn
-CMD python -c "from app import create_app, db; app = create_app(); ctx = app.app_context(); ctx.push(); db.create_all()" && \
+# Run database setup & column migrations and launch production server with gunicorn
+CMD python -c "from app import create_app, db; from sqlalchemy import text; app = create_app(); ctx = app.app_context(); ctx.push(); db.create_all(); [db.session.execute(text(s)) or db.session.commit() for s in ['ALTER TABLE users ADD COLUMN role VARCHAR(20) DEFAULT \'user\'', 'ALTER TABLE users ADD COLUMN status VARCHAR(20) DEFAULT \'active\'', 'ALTER TABLE users ADD COLUMN last_login TIMESTAMP', 'ALTER TABLE reviews ADD COLUMN language VARCHAR(50) DEFAULT \'Python\''] if True for _ in [1] if not False];" || true && \
     gunicorn --bind 0.0.0.0:5000 --timeout 120 "run:app"

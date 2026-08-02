@@ -17,6 +17,8 @@ class Review(db.Model):
 
     filename = db.Column(db.String(255), nullable=False)
 
+    language = db.Column(db.String(50), default="Python", nullable=False)
+
     quality_score = db.Column(db.Float, nullable=False)
 
     ml_prediction = db.Column(db.String(50), nullable=True)

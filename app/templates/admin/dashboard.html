@@ -1,0 +1,418 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Dashboard Overview{% endblock %}
+{% block header_title %}System Metrics & Overview{% endblock %}
+
+{% block content %}
+<!-- Section 0: Dashboard Date Filter Header -->
+<div class="card admin-card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ url_for('admin.dashboard') }}" id="dashFilterForm">
+            <input type="hidden" name="date_filter" id="dashHiddenDateFilter" value="{{ date_filter or '' }}">
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-primary me-1"></i>Filter Dashboard:</span>
+                    
+                    <button type="button" onclick="selectDashPreset('')" class="btn btn-sm {% if not date_filter %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        All Time
+                    </button>
+
+                    <button type="button" onclick="selectDashPreset('today')" class="btn btn-sm {% if date_filter == 'today' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Today
+                    </button>
+
+                    <button type="button" onclick="selectDashPreset('yesterday')" class="btn btn-sm {% if date_filter == 'yesterday' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Yesterday
+                    </button>
+
+                    <button type="button" onclick="selectDashPreset('last_7_days')" class="btn btn-sm {% if date_filter == 'last_7_days' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Last 7 Days
+                    </button>
+
+                    <button type="button" onclick="selectDashPreset('this_month')" class="btn btn-sm {% if date_filter == 'this_month' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        This Month
+                    </button>
+
+                    <button type="button" onclick="selectDashPreset('custom')" class="btn btn-sm {% if date_filter == 'custom' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        <i class="bi bi-calendar-range me-1"></i> Custom Range
+                    </button>
+                </div>
+
+                <!-- Custom Start/End Date Pickers -->
+                <div class="d-flex align-items-center gap-2 {% if date_filter != 'custom' %}d-none{% endif %}" id="dashCustomDateWrapper">
+                    <input type="date" name="start_date" id="dashStartDate" value="{{ start_date }}" class="form-control form-control-sm" placeholder="Start Date" onchange="autoSubmitDashRange()">
+                    <span class="text-muted small">to</span>
+                    <input type="date" name="end_date" id="dashEndDate" value="{{ end_date }}" class="form-control form-control-sm" placeholder="End Date" onchange="autoSubmitDashRange()">
+                </div>
+
+                <div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-6 fw-normal">
+                        <i class="bi bi-calendar3 me-1"></i> Dashboard View: <strong>{{ display_range }}</strong>
+                    </span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Section 1: Core System Metrics -->
+<div class="row g-3 mb-4">
+    <!-- Total Registered Users -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card admin-card h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Total Users</div>
+                    <div class="h3 mb-0 fw-bold text-dark">{{ metrics.total_users }}</div>
+                </div>
+                <div class="stat-icon-wrapper bg-primary bg-opacity-10 text-primary">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Uploaded Files -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card admin-card h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Total Uploads</div>
+                    <div class="h3 mb-0 fw-bold text-dark">{{ metrics.total_uploads }}</div>
+                </div>
+                <div class="stat-icon-wrapper bg-info bg-opacity-10 text-info">
+                    <i class="bi bi-folder-symlink-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Analysis Reports -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+        <div class="card admin-card h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Total Reports</div>
+                    <div class="h3 mb-0 fw-bold text-dark">{{ metrics.total_reports }}</div>
+                </div>
+                <div class="stat-icon-wrapper bg-secondary bg-opacity-10 text-secondary">
+                    <i class="bi bi-file-earmark-bar-graph-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Total Successful Reviews -->
+    <div class="col-xl-3 col-md-6 col-sm-6">
+        <div class="card admin-card h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Successful Reviews</div>
+                    <div class="h3 mb-0 fw-bold text-success">{{ metrics.total_successful_reviews }}</div>
+                </div>
+                <div class="stat-icon-wrapper bg-success bg-opacity-10 text-success">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Average Quality Score -->
+    <div class="col-xl-3 col-md-6 col-sm-6">
+        <div class="card admin-card h-100 p-3">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <div class="text-muted small text-uppercase fw-bold mb-1" style="font-size: 0.7rem;">Avg Quality Score</div>
+                    <div class="h3 mb-0 fw-bold text-indigo" style="color: #6366f1;">{{ metrics.avg_quality_score }}<span class="fs-6 text-muted">/100</span></div>
+                </div>
+                <div class="stat-icon-wrapper bg-warning bg-opacity-10 text-warning">
+                    <i class="bi bi-star-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: User Registrations Breakdown -->
+<div class="card admin-card mb-4">
+    <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-person-plus-fill me-2 text-primary"></i>User Registrations Breakdown & Inspection</h6>
+        <span class="text-muted small">Click <strong>"Inspect Users"</strong> to view who registered in each timeframe</span>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <!-- Registered Today -->
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light position-relative">
+                    <div class="text-muted small mb-1 fw-semibold">Registered Today</div>
+                    <div class="h3 mb-2 fw-bold text-primary">{{ metrics.users_today }}</div>
+                    <button type="button" class="btn btn-xs btn-outline-primary rounded-pill px-3 py-1 text-uppercase" style="font-size: 0.75rem;" onclick="openRegisteredUsersModal('today', 'Registered Today')">
+                        <i class="bi bi-eye me-1"></i> Inspect Users
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registered Yesterday -->
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light position-relative">
+                    <div class="text-muted small mb-1 fw-semibold">Registered Yesterday</div>
+                    <div class="h3 mb-2 fw-bold text-dark">{{ metrics.users_yesterday }}</div>
+                    <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-3 py-1 text-uppercase" style="font-size: 0.75rem;" onclick="openRegisteredUsersModal('yesterday', 'Registered Yesterday')">
+                        <i class="bi bi-eye me-1"></i> Inspect Users
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registered This Week -->
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light position-relative">
+                    <div class="text-muted small mb-1 fw-semibold">Registered This Week</div>
+                    <div class="h3 mb-2 fw-bold text-info">{{ metrics.users_this_week }}</div>
+                    <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-3 py-1 text-uppercase" style="font-size: 0.75rem;" onclick="openRegisteredUsersModal('last_7_days', 'Registered This Week')">
+                        <i class="bi bi-eye me-1"></i> Inspect Users
+                    </button>
+                </div>
+            </div>
+
+            <!-- Registered This Month -->
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light position-relative">
+                    <div class="text-muted small mb-1 fw-semibold">Registered This Month</div>
+                    <div class="h3 mb-2 fw-bold text-success">{{ metrics.users_this_month }}</div>
+                    <button type="button" class="btn btn-xs btn-outline-success rounded-pill px-3 py-1 text-uppercase" style="font-size: 0.75rem;" onclick="openRegisteredUsersModal('this_month', 'Registered This Month')">
+                        <i class="bi bi-eye me-1"></i> Inspect Users
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3: File Uploads Breakdown -->
+<div class="card admin-card mb-4">
+    <div class="card-header bg-white py-3">
+        <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-cloud-arrow-up-fill me-2 text-info"></i>File Uploads Breakdown</h6>
+    </div>
+    <div class="card-body">
+        <div class="row g-3 text-center">
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light">
+                    <div class="text-muted small mb-1 fw-semibold">Uploads Today</div>
+                    <div class="h4 mb-0 fw-bold text-primary">{{ metrics.uploads_today }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light">
+                    <div class="text-muted small mb-1 fw-semibold">Uploads Yesterday</div>
+                    <div class="h4 mb-0 fw-bold text-dark">{{ metrics.uploads_yesterday }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light">
+                    <div class="text-muted small mb-1 fw-semibold">Uploads This Week</div>
+                    <div class="h4 mb-0 fw-bold text-info">{{ metrics.uploads_this_week }}</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="p-3 border rounded bg-light">
+                    <div class="text-muted small mb-1 fw-semibold">Uploads This Month</div>
+                    <div class="h4 mb-0 fw-bold text-success">{{ metrics.uploads_this_month }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Section 4: Recent Activity Quick Preview -->
+<div class="row g-4 mb-4">
+    <!-- Recent Users -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-clock-history me-2 text-primary"></i>Recently Registered Users ({{ display_range }})</h6>
+                <a href="{{ url_for('admin.users', date_filter=date_filter, start_date=start_date, end_date=end_date) }}" class="btn btn-sm btn-outline-primary rounded-pill">View All Users</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Registered</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in recent_users %}
+                        <tr>
+                            <td class="fw-bold">{{ u.username }}</td>
+                            <td>{{ u.email }}</td>
+                            <td>
+                                <span class="badge {{ 'badge-role-admin' if u.role == 'admin' else 'badge-role-user' }} rounded-pill">
+                                    {{ u.role|upper }}
+                                </span>
+                            </td>
+                            <td class="text-muted">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">No user registrations found for {{ display_range }}.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Reviews -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold"><i class="bi bi-file-code me-2 text-info"></i>Recent Analysis Reviews ({{ display_range }})</h6>
+                <a href="{{ url_for('admin.reports', date_filter=date_filter, start_date=start_date, end_date=end_date) }}" class="btn btn-sm btn-outline-info rounded-pill">View All Reports</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Filename</th>
+                            <th>User ID</th>
+                            <th>Score</th>
+                            <th>ML Label</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in recent_reviews %}
+                        <tr>
+                            <td class="fw-bold text-truncate" style="max-width: 140px;">{{ r.filename }}</td>
+                            <td>User #{{ r.user_id }}</td>
+                            <td>
+                                <span class="fw-bold {{ 'text-success' if r.quality_score >= 80 else 'text-warning' if r.quality_score >= 50 else 'text-danger' }}">
+                                    {{ r.quality_score }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary rounded-pill">{{ r.ml_prediction or 'N/A' }}</span>
+                            </td>
+                            <td class="text-muted">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">No code reviews found for {{ display_range }}.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Inspect Registered Users -->
+<div class="modal fade" id="registeredUsersModal" tabindex="-1" aria-labelledby="registeredUsersModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="registeredUsersModalLabel">
+                    <i class="bi bi-people-fill me-2"></i><span id="registeredUsersModalTitle">Registered Users</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" id="registeredUsersModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <a id="goToUserManagementBtn" href="{{ url_for('admin.users') }}" class="btn btn-outline-primary btn-sm rounded-pill">Open Full User Management</a>
+                <button type="button" class="btn btn-secondary btn-sm rounded-pill" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectDashPreset(preset) {
+    document.getElementById('dashHiddenDateFilter').value = preset;
+    const customDiv = document.getElementById('dashCustomDateWrapper');
+    if (preset === 'custom') {
+        customDiv.classList.remove('d-none');
+    } else {
+        customDiv.classList.add('d-none');
+        document.getElementById('dashFilterForm').submit();
+    }
+}
+
+function autoSubmitDashRange() {
+    const s = document.getElementById('dashStartDate').value;
+    const e = document.getElementById('dashEndDate').value;
+    if (s && e) {
+        document.getElementById('dashFilterForm').submit();
+    }
+}
+
+function openRegisteredUsersModal(filterKey, titleText) {
+    const titleEl = document.getElementById('registeredUsersModalTitle');
+    const bodyEl = document.getElementById('registeredUsersModalBody');
+    const fullMgmtBtn = document.getElementById('goToUserManagementBtn');
+
+    titleEl.innerText = titleText;
+    bodyEl.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    fullMgmtBtn.href = '/admin/users?date_filter=' + filterKey;
+
+    const modal = new bootstrap.Modal(document.getElementById('registeredUsersModal'));
+    modal.show();
+
+    fetch('/admin/dashboard/registered-users?date_filter=' + filterKey)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success || !data.users.length) {
+                bodyEl.innerHTML = '<div class="p-4 text-center text-muted">No users registered during this timeframe.</div>';
+                return;
+            }
+
+            let rowsHtml = '';
+            data.users.forEach(u => {
+                rowsHtml += `
+                    <tr>
+                        <td class="fw-bold">#${u.id}</td>
+                        <td class="fw-semibold text-dark">${u.username}</td>
+                        <td>${u.email}</td>
+                        <td><span class="badge ${u.role === 'admin' ? 'bg-indigo' : 'bg-secondary'} rounded-pill">${u.role.toUpperCase()}</span></td>
+                        <td><span class="badge ${u.status === 'active' ? 'bg-success' : 'bg-danger'} rounded-pill">${u.status.toUpperCase()}</span></td>
+                        <td class="small text-muted">${u.created_at}</td>
+                    </tr>
+                `;
+            });
+
+            bodyEl.innerHTML = `
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" style="font-size: 0.875rem;">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Registered Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        })
+        .catch(err => {
+            bodyEl.innerHTML = '<div class="alert alert-danger m-3">Failed to load user list.</div>';
+        });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Report Management{% endblock %}
+{% block header_title %}Report Management{% endblock %}
+
+{% block content %}
+<div class="card admin-card mb-4">
+    <div class="card-header bg-white py-3">
+        <form method="GET" action="{{ url_for('admin.reports') }}" class="row g-2 align-items-center">
+            <!-- Search Input -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control" placeholder="Search by filename, user, or label...">
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="col-md-3">
+                <select name="date_filter" id="reportDateFilter" class="form-select" onchange="toggleCustomDateInputs('reportDateFilter', 'customReportDateInputs')">
+                    <option value="">All Time</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                    <option value="last_7_days" {% if date_filter == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="last_30_days" {% if date_filter == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Date Range</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs -->
+            <div class="col-md-3 {% if date_filter != 'custom' %}d-none{% endif %}" id="customReportDateInputs">
+                <div class="d-flex gap-1">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm" placeholder="Start">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm" placeholder="End">
+                </div>
+            </div>
+
+            <!-- Submit & Reset Buttons -->
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter me-1"></i> Filter</button>
+                <a href="{{ url_for('admin.reports') }}" class="btn btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#Report ID</th>
+                    <th>User</th>
+                    <th>Filename</th>
+                    <th>Score</th>
+                    <th>Quality Label</th>
+                    <th>Report Date</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in reports %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ r.id }}</td>
+                    <td>
+                        <span class="fw-semibold text-dark">{{ r.user.username if r.user else 'Unknown' }}</span>
+                    </td>
+                    <td>
+                        <i class="bi bi-file-earmark-text me-1 text-info"></i>
+                        <span class="fw-bold text-dark">{{ r.filename }}</span>
+                    </td>
+                    <td>
+                        <span class="fw-bold fs-6 {{ 'text-success' if r.quality_score >= 80 else 'text-warning' if r.quality_score >= 50 else 'text-danger' }}">
+                            {{ r.quality_score }} / 100
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {{ 'bg-success' if r.ml_prediction == 'Excellent' else 'bg-primary' if r.ml_prediction == 'Good' else 'bg-warning text-dark' if r.ml_prediction == 'Average' else 'bg-danger' }} rounded-pill">
+                            {{ r.ml_prediction or 'N/A' }}
+                        </span>
+                    </td>
+                    <td class="small text-muted">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else 'N/A' }}</td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <!-- Download Report -->
+                            <a href="{{ url_for('reports.download_report', review_id=r.id) }}" class="btn btn-outline-success" title="Download Report">
+                                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Download
+                            </a>
+
+                            <!-- View Details Modal Trigger -->
+                            <button type="button" class="btn btn-outline-info" onclick="viewReportDetails({{ r.id }})" title="View Details">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+
+                            <!-- Delete Report -->
+                            <button type="button" class="btn btn-outline-danger" onclick="confirmDeleteReport({{ r.id }}, {{ r.filename|tojson }})" title="Delete Report">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                        <i class="bi bi-file-earmark-x fs-3 d-block mb-2"></i>
+                        No analysis reports found matching your criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer bg-white d-flex align-items-center justify-content-between py-3">
+        <div class="small text-muted">
+            Showing Page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages }}</strong> ({{ pagination.total }} Total Reports)
+        </div>
+        <nav aria-label="Reports pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.reports', page=pagination.prev_num, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Previous</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin.reports', page=p, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.reports', page=pagination.next_num, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- View Report Details Modal -->
+<div class="modal fade" id="viewReportModal" tabindex="-1" aria-labelledby="viewReportModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title fw-bold" id="viewReportModalLabel"><i class="bi bi-file-earmark-bar-graph me-2"></i>Analysis Report Summary</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="viewReportModalBody">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-info" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <a id="modalDownloadReportLink" href="#" class="btn btn-success" target="_blank"><i class="bi bi-download me-1"></i> Download PDF Report</a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCustomDateInputs(selectId, inputsDivId) {
+    const val = document.getElementById(selectId).value;
+    const inputsDiv = document.getElementById(inputsDivId);
+    if (val === 'custom') {
+        inputsDiv.classList.remove('d-none');
+    } else {
+        inputsDiv.classList.add('d-none');
+    }
+}
+
+function viewReportDetails(reportId) {
+    const modalBody = document.getElementById('viewReportModalBody');
+    const downloadLink = document.getElementById('modalDownloadReportLink');
+    downloadLink.href = '/reports/download/' + reportId;
+
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-info"></div></div>';
+    const modal = new bootstrap.Modal(document.getElementById('viewReportModal'));
+    modal.show();
+
+    fetch('/admin/reports/' + reportId + '/json')
+        .then(res => res.json())
+        .then(data => {
+            if (data.error) {
+                modalBody.innerHTML = '<div class="alert alert-danger mb-0">' + data.error + '</div>';
+                return;
+            }
+            modalBody.innerHTML = `
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1 text-muted">Filename:</p>
+                        <h5 class="fw-bold">${data.filename}</h5>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <p class="mb-1 text-muted">Quality Score:</p>
+                        <h3 class="fw-bold text-primary">${data.quality_score} / 100</h3>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block">ML Prediction</small>
+                            <strong class="text-dark">${data.ml_prediction || 'N/A'}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block">Confidence</small>
+                            <strong class="text-dark">${data.ml_confidence ? (data.ml_confidence * 100).toFixed(1) + '%' : 'N/A'}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block">Issue Count</small>
+                            <strong class="text-dark">${data.issue_count}</strong>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2 border rounded bg-light text-center">
+                            <small class="text-muted d-block">Semantic Score</small>
+                            <strong class="text-dark">${data.semantic_score || 'N/A'}</strong>
+                        </div>
+                    </div>
+                </div>
+                <div class="border rounded p-3 bg-light mb-3">
+                    <h6 class="fw-bold"><i class="bi bi-clock me-1"></i>Report Information</h6>
+                    <p class="mb-1 small"><strong>Submitted By:</strong> ${data.user_username} (${data.user_email})</p>
+                    <p class="mb-0 small"><strong>Analysis Timestamp:</strong> ${data.created_at}</p>
+                </div>
+            `;
+        })
+        .catch(() => {
+            modalBody.innerHTML = '<div class="alert alert-danger mb-0">Failed to load report details.</div>';
+        });
+}
+
+function confirmDeleteReport(reportId, filename) {
+    const title = 'Delete Analysis Report';
+    const msg = `Are you sure you want to delete report for <strong>"${filename}"</strong>?`;
+
+    triggerAdminConfirm(title, msg, 'btn-danger', 'Delete Report', function () {
+        showAdminSpinner();
+        fetch('/admin/reports/' + reportId + '/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideAdminSpinner();
+            if (data.success) {
+                showAdminToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAdminToast(data.error || 'Delete failed.', 'danger');
+            }
+        })
+        .catch(() => {
+            hideAdminSpinner();
+            showAdminToast('Network error encountered.', 'danger');
+        });
+    });
+}
+</script>
+{% endblock %}

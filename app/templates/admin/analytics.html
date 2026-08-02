@@ -1,0 +1,289 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Analytics & Charts{% endblock %}
+{% block header_title %}Analytics & Visual Data Graphs{% endblock %}
+
+{% block content %}
+<!-- Quick Date Filter Control Header -->
+<div class="card admin-card mb-4">
+    <div class="card-body py-3">
+        <form method="GET" action="{{ url_for('admin.analytics') }}" id="analyticsFilterForm">
+            <input type="hidden" name="date_filter" id="hiddenDateFilter" value="{{ date_filter or 'last_30_days' }}">
+
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <!-- Preset Filter Pills/Buttons -->
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="text-muted small fw-bold me-1"><i class="bi bi-funnel-fill text-primary me-1"></i>Date Presets:</span>
+                    
+                    <button type="button" onclick="selectDatePreset('today')" class="btn btn-sm {% if date_filter == 'today' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        <i class="bi bi-clock me-1"></i> Today
+                    </button>
+
+                    <button type="button" onclick="selectDatePreset('yesterday')" class="btn btn-sm {% if date_filter == 'yesterday' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Yesterday
+                    </button>
+
+                    <button type="button" onclick="selectDatePreset('last_7_days')" class="btn btn-sm {% if date_filter == 'last_7_days' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Last 7 Days
+                    </button>
+
+                    <button type="button" onclick="selectDatePreset('this_month')" class="btn btn-sm {% if date_filter == 'this_month' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        This Month
+                    </button>
+
+                    <button type="button" onclick="selectDatePreset('last_30_days')" class="btn btn-sm {% if date_filter == 'last_30_days' or not date_filter %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        Last 30 Days
+                    </button>
+
+                    <button type="button" onclick="selectDatePreset('custom')" class="btn btn-sm {% if date_filter == 'custom' %}btn-primary{% else %}btn-outline-secondary{% endif %} rounded-pill px-3">
+                        <i class="bi bi-calendar-range me-1"></i> Custom Range
+                    </button>
+                </div>
+
+                <!-- Custom Start and End Date Pickers -->
+                <div class="d-flex align-items-center gap-2 {% if date_filter != 'custom' %}d-none{% endif %}" id="customDatePickersWrapper">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="start_date" id="startDateInput" value="{{ start_date }}" class="form-control form-control-sm" placeholder="Start Date" onchange="autoSubmitCustomRange()">
+                    </div>
+                    <span class="text-muted small">to</span>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light"><i class="bi bi-calendar-event"></i></span>
+                        <input type="date" name="end_date" id="endDateInput" value="{{ end_date }}" class="form-control form-control-sm" placeholder="End Date" onchange="autoSubmitCustomRange()">
+                    </div>
+                </div>
+
+                <!-- Active Range Indicator Badge -->
+                <div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-3 py-2 rounded-pill fs-6 fw-normal">
+                        <i class="bi bi-calendar3 me-1"></i> Active Range: <strong>{{ display_range }}</strong>
+                    </span>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Grid of Analytics Chart Cards -->
+<div class="row g-4 mb-4">
+    <!-- Chart 1: New Users Per Day -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-person-plus-fill me-2 text-primary"></i>New Users Per Day</h6>
+                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">{{ display_range }}</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chartUsersPerDay"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 2: Uploads Per Day -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-cloud-arrow-up-fill me-2 text-info"></i>Uploads Per Day</h6>
+                <span class="badge bg-info bg-opacity-10 text-info rounded-pill">{{ display_range }}</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chartUploadsPerDay"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 3: Reports Per Day -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-file-earmark-bar-graph-fill me-2 text-secondary"></i>Reports Generated Per Day</h6>
+                <span class="badge bg-secondary bg-opacity-10 text-secondary rounded-pill">{{ display_range }}</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chartReportsPerDay"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 4: Average Quality Score Over Time -->
+    <div class="col-lg-6">
+        <div class="card admin-card h-100">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-star-fill me-2 text-warning"></i>Average Quality Score Over Time</h6>
+                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">{{ display_range }}</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 280px; position: relative;">
+                    <canvas id="chartAvgQualityScore"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart 5: Top 10 Active Users -->
+    <div class="col-12">
+        <div class="card admin-card">
+            <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between">
+                <h6 class="mb-0 fw-bold text-dark"><i class="bi bi-trophy-fill me-2 text-warning"></i>Top 10 Active Users</h6>
+                <span class="badge bg-indigo bg-opacity-10 text-indigo rounded-pill" style="color: #6366f1;">{{ display_range }}</span>
+            </div>
+            <div class="card-body">
+                <div style="height: 320px; position: relative;">
+                    <canvas id="chartTopUsers"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let chartInstances = {};
+
+function selectDatePreset(preset) {
+    document.getElementById('hiddenDateFilter').value = preset;
+    const customWrapper = document.getElementById('customDatePickersWrapper');
+    
+    if (preset === 'custom') {
+        customWrapper.classList.remove('d-none');
+    } else {
+        customWrapper.classList.add('d-none');
+        document.getElementById('analyticsFilterForm').submit();
+    }
+}
+
+function autoSubmitCustomRange() {
+    const startVal = document.getElementById('startDateInput').value;
+    const endVal = document.getElementById('endDateInput').value;
+    if (startVal && endVal) {
+        document.getElementById('analyticsFilterForm').submit();
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadAnalyticsCharts();
+});
+
+function loadAnalyticsCharts() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const apiUrl = '/admin/analytics/data?' + urlParams.toString();
+
+    showAdminSpinner();
+
+    fetch(apiUrl)
+        .then(res => res.json())
+        .then(data => {
+            hideAdminSpinner();
+            renderCharts(data);
+        })
+        .catch(err => {
+            hideAdminSpinner();
+            showAdminToast('Failed to load analytics graph datasets.', 'danger');
+        });
+}
+
+function renderCharts(data) {
+    // 1. Users Per Day
+    initLineChart('chartUsersPerDay', data.users_by_day.labels, data.users_by_day.data, 'New Users', '#0ea5e9');
+
+    // 2. Uploads Per Day
+    initBarChart('chartUploadsPerDay', data.uploads_by_day.labels, data.uploads_by_day.data, 'Uploads', '#3b82f6');
+
+    // 3. Reports Per Day
+    initLineChart('chartReportsPerDay', data.reports_by_day.labels, data.reports_by_day.data, 'Reports Generated', '#64748b');
+
+    // 4. Avg Quality Score
+    initLineChart('chartAvgQualityScore', data.score_by_day.labels, data.score_by_day.data, 'Avg Score', '#eab308', 0, 100);
+
+    // 5. Top Users
+    initHorizontalBarChart('chartTopUsers', data.top_users.labels, data.top_users.data, 'Reviews Submitted', '#6366f1');
+}
+
+function initLineChart(canvasId, labels, datasetData, labelName, color, minY, maxY) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [{
+                label: labelName,
+                data: datasetData.length ? datasetData : [0],
+                borderColor: color,
+                backgroundColor: color + '20',
+                fill: true,
+                tension: 0.3,
+                borderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: minY === undefined,
+                    min: minY,
+                    max: maxY
+                }
+            }
+        }
+    });
+}
+
+function initBarChart(canvasId, labels, datasetData, labelName, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels.length ? labels : ['No Data'],
+            datasets: [{
+                label: labelName,
+                data: datasetData.length ? datasetData : [0],
+                backgroundColor: color,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true } }
+        }
+    });
+}
+
+function initHorizontalBarChart(canvasId, labels, datasetData, labelName, color) {
+    const ctx = document.getElementById(canvasId).getContext('2d');
+    if (chartInstances[canvasId]) chartInstances[canvasId].destroy();
+
+    chartInstances[canvasId] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels.length ? labels : ['No Active Users'],
+            datasets: [{
+                label: labelName,
+                data: datasetData.length ? datasetData : [0],
+                backgroundColor: color,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { x: { beginAtZero: true } }
+        }
+    });
+}
+</script>
+{% endblock %}

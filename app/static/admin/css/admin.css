@@ -1,0 +1,188 @@
+/* Admin Panel Core Custom Styles */
+:root {
+    --admin-sidebar-width: 260px;
+    --admin-sidebar-bg: #1e293b;
+    --admin-sidebar-hover: #334155;
+    --admin-sidebar-active: #0ea5e9;
+    --admin-navbar-height: 60px;
+    --admin-body-bg: #f8fafc;
+}
+
+body.admin-body {
+    background-color: var(--admin-body-bg);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+}
+
+/* Sidebar Styling */
+#admin-sidebar {
+    width: var(--admin-sidebar-width);
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background-color: var(--admin-sidebar-bg);
+    color: #f8fafc;
+    transition: all 0.3s ease-in-out;
+    z-index: 1040;
+    overflow-y: auto;
+}
+
+#admin-sidebar .sidebar-brand {
+    height: var(--admin-navbar-height);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    border-bottom: 1px solid #334155;
+    text-decoration: none;
+}
+
+#admin-sidebar .sidebar-brand i {
+    color: var(--admin-sidebar-active);
+    margin-right: 0.75rem;
+}
+
+#admin-sidebar .nav-link {
+    color: #94a3b8;
+    padding: 0.85rem 1.5rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease;
+}
+
+#admin-sidebar .nav-link i {
+    width: 24px;
+    font-size: 1.1rem;
+    margin-right: 0.75rem;
+}
+
+#admin-sidebar .nav-link:hover {
+    color: #ffffff;
+    background-color: var(--admin-sidebar-hover);
+}
+
+#admin-sidebar .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(14, 165, 233, 0.15);
+    border-left-color: var(--admin-sidebar-active);
+}
+
+/* Main Content Wrapper */
+#admin-main-wrapper {
+    margin-left: var(--admin-sidebar-width);
+    transition: all 0.3s ease-in-out;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Top Navbar */
+#admin-navbar {
+    height: var(--admin-navbar-height);
+    background-color: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+}
+
+.sidebar-toggle-btn {
+    background: none;
+    border: none;
+    font-size: 1.25rem;
+    color: #64748b;
+    cursor: pointer;
+}
+
+.sidebar-toggle-btn:hover {
+    color: #0f172a;
+}
+
+/* Cards & Widgets */
+.admin-card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+    background-color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon-wrapper {
+    width: 48px;
+    height: 48px;
+    border-radius: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+}
+
+/* Status Badges */
+.badge-role-admin {
+    background-color: #6366f1;
+    color: #ffffff;
+}
+
+.badge-role-user {
+    background-color: #64748b;
+    color: #ffffff;
+}
+
+.badge-status-active {
+    background-color: #10b981;
+    color: #ffffff;
+}
+
+.badge-status-disabled {
+    background-color: #ef4444;
+    color: #ffffff;
+}
+
+/* Loading Spinner Overlay */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+}
+
+#loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Responsive Collapsed Sidebar */
+@media (max-width: 991.98px) {
+    #admin-sidebar {
+        margin-left: calc(-1 * var(--admin-sidebar-width));
+    }
+    #admin-sidebar.show {
+        margin-left: 0;
+    }
+    #admin-main-wrapper {
+        margin-left: 0;
+    }
+}

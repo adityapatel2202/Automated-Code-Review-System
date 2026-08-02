@@ -43,4 +43,7 @@ def create_app():
     from .prediction import prediction_bp
     app.register_blueprint(prediction_bp)
 
+    from .admin import admin_bp
+    app.register_blueprint(admin_bp)
+
     return app

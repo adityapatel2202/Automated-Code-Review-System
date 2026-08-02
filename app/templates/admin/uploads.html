@@ -1,0 +1,175 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}Upload Management{% endblock %}
+{% block header_title %}Upload Management{% endblock %}
+
+{% block content %}
+<div class="card admin-card mb-4">
+    <div class="card-header bg-white py-3">
+        <form method="GET" action="{{ url_for('admin.uploads') }}" class="row g-2 align-items-center">
+            <!-- Search Input -->
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control" placeholder="Search by filename or username...">
+                </div>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="col-md-3">
+                <select name="date_filter" id="uploadDateFilter" class="form-select" onchange="toggleCustomDateInputs('uploadDateFilter', 'customUploadDateInputs')">
+                    <option value="">All Time</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                    <option value="last_7_days" {% if date_filter == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="last_30_days" {% if date_filter == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Date Range</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs -->
+            <div class="col-md-3 {% if date_filter != 'custom' %}d-none{% endif %}" id="customUploadDateInputs">
+                <div class="d-flex gap-1">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm" placeholder="Start">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm" placeholder="End">
+                </div>
+            </div>
+
+            <!-- Submit & Reset Buttons -->
+            <div class="col-md-2 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter me-1"></i> Filter</button>
+                <a href="{{ url_for('admin.uploads') }}" class="btn btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#ID</th>
+                    <th>User</th>
+                    <th>Filename</th>
+                    <th>Language</th>
+                    <th>Upload Date</th>
+                    <th>Quality Score</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in uploads %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ r.id }}</td>
+                    <td>
+                        <span class="fw-semibold text-dark">{{ r.user.username if r.user else 'Unknown' }}</span>
+                        <div class="small text-muted">{{ r.user.email if r.user else '' }}</div>
+                    </td>
+                    <td>
+                        <i class="bi bi-filetype-py me-1 text-primary"></i>
+                        <span class="fw-bold text-dark">{{ r.filename }}</span>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2 py-1">
+                            {{ r.language or 'Python' }}
+                        </span>
+                    </td>
+                    <td class="small text-muted">{{ r.created_at.strftime('%Y-%m-%d %H:%M') if r.created_at else 'N/A' }}</td>
+                    <td>
+                        <span class="fw-bold {{ 'text-success' if r.quality_score >= 80 else 'text-warning' if r.quality_score >= 50 else 'text-danger' }}">
+                            {{ r.quality_score }} / 100
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 rounded-pill">
+                            <i class="bi bi-check-circle me-1"></i> Reviewed
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="confirmDeleteUpload({{ r.id }}, {{ r.filename|tojson }})" title="Delete File & Review">
+                            <i class="bi bi-trash-fill me-1"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        <i class="bi bi-folder-x fs-3 d-block mb-2"></i>
+                        No uploaded files found matching your filters.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer bg-white d-flex align-items-center justify-content-between py-3">
+        <div class="small text-muted">
+            Showing Page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages }}</strong> ({{ pagination.total }} Total Files)
+        </div>
+        <nav aria-label="Uploads pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.uploads', page=pagination.prev_num, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Previous</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin.uploads', page=p, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.uploads', page=pagination.next_num, q=search_q, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCustomDateInputs(selectId, inputsDivId) {
+    const val = document.getElementById(selectId).value;
+    const inputsDiv = document.getElementById(inputsDivId);
+    if (val === 'custom') {
+        inputsDiv.classList.remove('d-none');
+    } else {
+        inputsDiv.classList.add('d-none');
+    }
+}
+
+function confirmDeleteUpload(reviewId, filename) {
+    const title = 'Delete Uploaded File & Report';
+    const msg = `Are you sure you want to delete file <strong>"${filename}"</strong>? This will permanently remove the analysis report and records.`;
+
+    triggerAdminConfirm(title, msg, 'btn-danger', 'Delete File', function () {
+        showAdminSpinner();
+        fetch('/admin/uploads/' + reviewId + '/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideAdminSpinner();
+            if (data.success) {
+                showAdminToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAdminToast(data.error || 'Delete failed.', 'danger');
+            }
+        })
+        .catch(() => {
+            hideAdminSpinner();
+            showAdminToast('Network error encountered.', 'danger');
+        });
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,285 @@
+{% extends "admin/layout.html" %}
+
+{% block title %}User Management{% endblock %}
+{% block header_title %}User Management{% endblock %}
+
+{% block content %}
+<div class="card admin-card mb-4">
+    <div class="card-header bg-white py-3">
+        <form method="GET" action="{{ url_for('admin.users') }}" class="row g-2 align-items-center">
+            <!-- Search Input -->
+            <div class="col-md-3">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" value="{{ search_q }}" class="form-control" placeholder="Search by name or email...">
+                </div>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="col-md-2">
+                <select name="status" class="form-select">
+                    <option value="">All Statuses</option>
+                    <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Active</option>
+                    <option value="disabled" {% if status_filter == 'disabled' %}selected{% endif %}>Disabled</option>
+                </select>
+            </div>
+
+            <!-- Date Filter -->
+            <div class="col-md-3">
+                <select name="date_filter" id="userDateFilter" class="form-select" onchange="toggleCustomDateInputs('userDateFilter', 'customDateRangeInputs')">
+                    <option value="">All Time</option>
+                    <option value="today" {% if date_filter == 'today' %}selected{% endif %}>Today</option>
+                    <option value="yesterday" {% if date_filter == 'yesterday' %}selected{% endif %}>Yesterday</option>
+                    <option value="last_7_days" {% if date_filter == 'last_7_days' %}selected{% endif %}>Last 7 Days</option>
+                    <option value="last_30_days" {% if date_filter == 'last_30_days' %}selected{% endif %}>Last 30 Days</option>
+                    <option value="custom" {% if date_filter == 'custom' %}selected{% endif %}>Custom Date Range</option>
+                </select>
+            </div>
+
+            <!-- Custom Date Inputs -->
+            <div class="col-md-3 {% if date_filter != 'custom' %}d-none{% endif %}" id="customDateRangeInputs">
+                <div class="d-flex gap-1">
+                    <input type="date" name="start_date" value="{{ start_date }}" class="form-control form-control-sm" placeholder="Start">
+                    <input type="date" name="end_date" value="{{ end_date }}" class="form-control form-control-sm" placeholder="End">
+                </div>
+            </div>
+
+            <!-- Submit & Reset Buttons -->
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-filter"></i></button>
+                <a href="{{ url_for('admin.users') }}" class="btn btn-light border" title="Reset Filters"><i class="bi bi-arrow-counterclockwise"></i></a>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>#ID</th>
+                    <th>User</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Registered</th>
+                    <th>Last Login</th>
+                    <th>Uploads / Reports</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ u.id }}</td>
+                    <td>
+                        <span class="fw-bold text-dark">{{ u.username }}</span>
+                    </td>
+                    <td>{{ u.email }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-role-admin' if u.role == 'admin' else 'badge-role-user' }} rounded-pill">
+                            {{ u.role|upper }}
+                        </span>
+                    </td>
+                    <td class="small text-muted">{{ u.created_at.strftime('%Y-%m-%d %H:%M') if u.created_at else 'N/A' }}</td>
+                    <td class="small text-muted">{{ u.last_login.strftime('%Y-%m-%d %H:%M') if u.last_login else 'Never' }}</td>
+                    <td>
+                        <span class="badge bg-light text-dark border px-2 py-1">
+                            <i class="bi bi-folder me-1 text-primary"></i> {{ u.reviews.count() }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {{ 'badge-status-active' if u.status == 'active' else 'badge-status-disabled' }} rounded-pill">
+                            {{ u.status|upper }}
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <!-- View User Details Modal Trigger -->
+                            <button type="button" class="btn btn-outline-info" onclick="viewUserDetails({{ u.id }})" title="View User Details">
+                                <i class="bi bi-eye-fill"></i>
+                            </button>
+
+                            <!-- Enable / Disable -->
+                            {% if u.id != current_user.id %}
+                                {% if u.status == 'active' %}
+                                <button type="button" class="btn btn-outline-warning" onclick="toggleUserStatus({{ u.id }}, 'disable')" title="Disable User">
+                                    <i class="bi bi-slash-circle"></i>
+                                </button>
+                                {% else %}
+                                <button type="button" class="btn btn-outline-success" onclick="toggleUserStatus({{ u.id }}, 'enable')" title="Enable User">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                {% endif %}
+
+                                <!-- Delete User -->
+                                <button type="button" class="btn btn-outline-danger" onclick="confirmDeleteUser({{ u.id }}, {{ u.username|tojson }})" title="Delete User">
+                                    <i class="bi bi-trash-fill"></i>
+                                </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted py-4">
+                        <i class="bi bi-person-exclamation fs-3 d-block mb-2"></i>
+                        No users found matching your criteria.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Footer -->
+    {% if pagination and pagination.pages > 1 %}
+    <div class="card-footer bg-white d-flex align-items-center justify-content-between py-3">
+        <div class="small text-muted">
+            Showing Page <strong>{{ pagination.page }}</strong> of <strong>{{ pagination.pages }}</strong> ({{ pagination.total }} Total Users)
+        </div>
+        <nav aria-label="Users pagination">
+            <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.users', page=pagination.prev_num, q=search_q, status=status_filter, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Previous</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin.users', page=p, q=search_q, status=status_filter, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">&hellip;</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                    <a class="page-link" href="{{ url_for('admin.users', page=pagination.next_num, q=search_q, status=status_filter, date_filter=date_filter, start_date=start_date, end_date=end_date) }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+
+<!-- View User Details Modal -->
+<div class="modal fade" id="viewUserModal" tabindex="-1" aria-labelledby="viewUserModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title fw-bold" id="viewUserModalLabel"><i class="bi bi-person-badge me-2"></i>User Profile Details</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="viewUserModalBody">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleCustomDateInputs(selectId, inputsDivId) {
+    const val = document.getElementById(selectId).value;
+    const inputsDiv = document.getElementById(inputsDivId);
+    if (val === 'custom') {
+        inputsDiv.classList.remove('d-none');
+    } else {
+        inputsDiv.classList.add('d-none');
+    }
+}
+
+function viewUserDetails(userId) {
+    const modalBody = document.getElementById('viewUserModalBody');
+    modalBody.innerHTML = '<div class="text-center py-4"><div class="spinner-border text-primary"></div></div>';
+    
+    const modal = new bootstrap.Modal(document.getElementById('viewUserModal'));
+    modal.show();
+
+    fetch('/admin/users/' + userId + '/json')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                modalBody.innerHTML = '<div class="alert alert-danger mb-0">' + data.error + '</div>';
+                return;
+            }
+            modalBody.innerHTML = `
+                <div class="text-center mb-4">
+                    <div class="display-6 fw-bold text-primary mb-1">${data.username}</div>
+                    <span class="badge bg-secondary rounded-pill me-1">${data.role.toUpperCase()}</span>
+                    <span class="badge ${data.status === 'active' ? 'bg-success' : 'bg-danger'} rounded-pill">${data.status.toUpperCase()}</span>
+                </div>
+                <ul class="list-group list-group-flush border-top border-bottom mb-3">
+                    <li class="list-group-item d-flex justify-content-between"><strong>User ID:</strong> <span>#${data.id}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Email Address:</strong> <span>${data.email}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Registration Date:</strong> <span>${data.created_at}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Last Login:</strong> <span>${data.last_login}</span></li>
+                    <li class="list-group-item d-flex justify-content-between"><strong>Total Uploads & Reports:</strong> <span>${data.total_uploads}</span></li>
+                </ul>
+            `;
+        })
+        .catch(err => {
+            modalBody.innerHTML = '<div class="alert alert-danger mb-0">Failed to load user details.</div>';
+        });
+}
+
+function toggleUserStatus(userId, action) {
+    const title = action === 'disable' ? 'Disable User Account' : 'Enable User Account';
+    const msg = `Are you sure you want to ${action} this user's account?`;
+    const btnClass = action === 'disable' ? 'btn-warning' : 'btn-success';
+
+    triggerAdminConfirm(title, msg, btnClass, action.toUpperCase(), function () {
+        showAdminSpinner();
+        fetch('/admin/users/' + userId + '/' + action, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideAdminSpinner();
+            if (data.success) {
+                showAdminToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAdminToast(data.error || 'Operation failed.', 'danger');
+            }
+        })
+        .catch(() => {
+            hideAdminSpinner();
+            showAdminToast('Network error encountered.', 'danger');
+        });
+    });
+}
+
+function confirmDeleteUser(userId, username) {
+    const title = 'Delete User Account';
+    const msg = `Are you sure you want to permanently delete user <strong>"${username}"</strong>? All associated review reports will also be deleted. This action cannot be undone.`;
+
+    triggerAdminConfirm(title, msg, 'btn-danger', 'Delete Permanently', function () {
+        showAdminSpinner();
+        fetch('/admin/users/' + userId + '/delete', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'}
+        })
+        .then(res => res.json())
+        .then(data => {
+            hideAdminSpinner();
+            if (data.success) {
+                showAdminToast(data.message, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showAdminToast(data.error || 'Delete failed.', 'danger');
+            }
+        })
+        .catch(() => {
+            hideAdminSpinner();
+            showAdminToast('Network error encountered.', 'danger');
+        });
+    });
+}
+</script>
+{% endblock %}
