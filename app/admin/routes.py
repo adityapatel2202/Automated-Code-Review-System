@@ -20,8 +20,7 @@ def admin_login():
         if getattr(current_user, "role", "user") == "admin":
             return redirect(url_for("admin.dashboard"))
         else:
-            flash("Current account does not have admin privileges.", "danger")
-            return redirect(url_for("auth.home"))
+            logout_user()
 
     if request.method == "POST":
         email = request.form.get("email", "").strip()
