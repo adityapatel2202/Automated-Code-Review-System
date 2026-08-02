@@ -9,7 +9,7 @@ pipeline {
         AWS_ACCOUNT_ID = '811430801569'
         AWS_DEFAULT_REGION = 'eu-west-2'
         ECR_REPO_NAME = 'automated-code-reviewer'
-        EC2_IP = '35.179.108.34'
+        EC2_IP = '3.11.103.59'
         EC2_USER = 'ubuntu'
     }
 
