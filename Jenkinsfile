@@ -1,6 +1,7 @@
 pipeline {
     agent any
 
+    // Trigger automatic GitHub Webhook deployment build
     triggers {
         githubPush()
     }
