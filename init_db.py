@@ -1,6 +1,6 @@
 """
 Database Initialization & Safe Auto-Migration Script for RDS PostgreSQL & SQLite
-Automatically promotes admin users and ensures admin roles are assigned.
+Automatically sets admin accounts, passwords, and roles on container startup.
 """
 import sys
 from sqlalchemy import text
@@ -35,33 +35,38 @@ with app.app_context():
             db.session.rollback()
             print(f"[MIGRATION SKIPPED / ALREADY EXISTS] {stmt}")
 
-    # 3. Promote admin accounts to role='admin'
-    promote_stmt = "UPDATE users SET role = 'admin', status = 'active' WHERE LOWER(username) IN ('admin', 'ditya0609', 'aditya') OR LOWER(email) LIKE '%admin%' OR LOWER(email) = 'ap7272422@codereview.com';"
-    try:
-        db.session.execute(text(promote_stmt))
-        db.session.commit()
-        print("[SUCCESS] Admin user roles promoted.")
-    except Exception as e:
-        db.session.rollback()
-        print("[WARN] Admin role update note:", e)
+    # 3. Reset/Set Admin User credentials & roles cleanly
+    from app.models.user import User
 
-    # 4. Create default admin if no admin exists
-    try:
-        from app.models.user import User
-        admin_user = User.query.filter_by(role="admin").first()
-        if not admin_user:
-            default_admin = User(
-                username="admin",
-                email="admin@code-review.com",
-                role="admin",
-                status="active"
-            )
-            default_admin.set_password("admin123")
-            db.session.add(default_admin)
-            db.session.commit()
-            print("[SUCCESS] Default Admin account 'admin@code-review.com' (password: admin123) created!")
-    except Exception as e:
-        db.session.rollback()
-        print("[WARN] Default admin creation note:", e)
+    admin_accounts = [
+        ("ditya0609", "ap7272422@gmail.com", "A@di1121"),
+        ("Aditya patel", "Ditya09@gmail.com", "A@di1121"),
+        ("admin", "admin@code-review.com", "admin123"),
+        ("ap7272422", "ap7272422@codereview.com", "A@di1121")
+    ]
+
+    for uname, email_addr, pwd in admin_accounts:
+        try:
+            u = User.query.filter((User.email == email_addr) | (User.username == uname)).first()
+            if u:
+                u.role = "admin"
+                u.status = "active"
+                u.set_password(pwd)
+                db.session.commit()
+                print(f"[ADMIN READY] Account '{u.email}' ({u.username}) password set & role='admin'")
+            else:
+                new_u = User(
+                    username=uname,
+                    email=email_addr,
+                    role="admin",
+                    status="active"
+                )
+                new_u.set_password(pwd)
+                db.session.add(new_u)
+                db.session.commit()
+                print(f"[ADMIN CREATED] Account '{email_addr}' ({uname}) created & role='admin'")
+        except Exception as e:
+            db.session.rollback()
+            print(f"[WARN] Admin setup for {email_addr}:", e)
 
     print("=== DATABASE SETUP COMPLETED SUCCESSFULLY ===")
