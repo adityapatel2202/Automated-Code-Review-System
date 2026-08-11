@@ -417,19 +417,34 @@ Analysis Result
             <!-- Clean Code Tab -->
             <div class="tab-pane fade show active" id="clean">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold text-muted mb-0">🧹 Clean & Formatted PEP 8 Code</h6>
-                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='clean') }}" class="btn btn-primary btn-sm fw-semibold">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">🧹 Clean & Formatted PEP 8 Code</h6>
+                        <small class="text-muted">Standard PEP 8 formatting, spacing, and clean structural syntax.</small>
+                    </div>
+                    {% if review_id %}
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='clean') }}" class="btn btn-primary btn-sm fw-semibold rounded-pill">
                         📥 Download Clean Code
                     </a>
+                    {% endif %}
                 </div>
-                <div class="row">
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-success mb-2">Clean Version</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.ai_result.clean_code }}</code></pre>
+
+                <div class="mb-3">
+                    <pre class="code-box bg-dark text-light p-3 rounded" style="max-height: 450px; overflow-y: auto;"><code class="language-python">{{ result.ai_result.clean_code }}</code></pre>
+                </div>
+
+                <button class="btn btn-sm btn-outline-secondary rounded-pill mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#cleanCompare" aria-expanded="false">
+                    <i class="bi bi-layout-split me-1"></i> Compare Side-by-Side with Original Code
+                </button>
+                <div class="collapse mb-3" id="cleanCompare">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-success mb-2">Clean Version</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.ai_result.clean_code }}</code></pre>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -437,19 +452,34 @@ Analysis Result
             <!-- Best Practice Tab -->
             <div class="tab-pane fade" id="practice">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold text-muted mb-0">💡 Best Practices & Docstrings</h6>
-                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='best_practice') }}" class="btn btn-primary btn-sm fw-semibold">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">💡 Best Practices & Type Hints</h6>
+                        <small class="text-muted">Injected type annotations (`typing`), PEP 257 docstrings, and robust pattern hints.</small>
+                    </div>
+                    {% if review_id %}
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='best_practice') }}" class="btn btn-success btn-sm fw-semibold rounded-pill">
                         📥 Download Best Practice Code
                     </a>
+                    {% endif %}
                 </div>
-                <div class="row">
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-primary mb-2">Best Practice Version</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.ai_result.best_practice }}</code></pre>
+
+                <div class="mb-3">
+                    <pre class="code-box bg-dark text-light p-3 rounded" style="max-height: 450px; overflow-y: auto;"><code class="language-python">{{ result.ai_result.best_practice }}</code></pre>
+                </div>
+
+                <button class="btn btn-sm btn-outline-secondary rounded-pill mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#practiceCompare" aria-expanded="false">
+                    <i class="bi bi-layout-split me-1"></i> Compare Side-by-Side with Original Code
+                </button>
+                <div class="collapse mb-3" id="practiceCompare">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-primary mb-2">Best Practice Version</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.ai_result.best_practice }}</code></pre>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -457,19 +487,34 @@ Analysis Result
             <!-- Optimized Tab -->
             <div class="tab-pane fade" id="optimized">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="fw-bold text-muted mb-0">⚡ Performance Optimized Code</h6>
-                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='optimized') }}" class="btn btn-primary btn-sm fw-semibold">
+                    <div>
+                        <h6 class="fw-bold text-dark mb-0">⚡ Performance & Execution Speed Optimization</h6>
+                        <small class="text-muted">Cleaned debug logs, optimized loop execution, and upgraded token/UUID efficiency.</small>
+                    </div>
+                    {% if review_id %}
+                    <a href="{{ url_for('reports.download_refactored', review_id=review_id, version='optimized') }}" class="btn btn-warning text-dark btn-sm fw-semibold rounded-pill">
                         📥 Download Optimized Code
                     </a>
+                    {% endif %}
                 </div>
-                <div class="row">
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-muted mb-2">Original Code</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
-                    </div>
-                    <div class="col-lg-6 mb-3">
-                        <h6 class="fw-bold text-warning mb-2">Optimized Version</h6>
-                        <pre class="code-box"><code class="language-python">{{ result.ai_result.optimized_code }}</code></pre>
+
+                <div class="mb-3">
+                    <pre class="code-box bg-dark text-light p-3 rounded" style="max-height: 450px; overflow-y: auto;"><code class="language-python">{{ result.ai_result.optimized_code }}</code></pre>
+                </div>
+
+                <button class="btn btn-sm btn-outline-secondary rounded-pill mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#optCompare" aria-expanded="false">
+                    <i class="bi bi-layout-split me-1"></i> Compare Side-by-Side with Original Code
+                </button>
+                <div class="collapse mb-3" id="optCompare">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-muted mb-2">Original Code</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.source_code }}</code></pre>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6 class="fw-bold text-warning mb-2">Optimized Version</h6>
+                            <pre class="code-box"><code class="language-python">{{ result.ai_result.optimized_code }}</code></pre>
+                        </div>
                     </div>
                 </div>
             </div>

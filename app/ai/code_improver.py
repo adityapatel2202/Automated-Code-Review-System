@@ -144,14 +144,41 @@ class CodeImprover:
             lines = source_code.splitlines()
             result_lines = []
             for line in lines:
-                result_lines.append(line)
-                if line.strip().startswith("def ") and ":" in line:
+                stripped = line.strip()
+                if stripped.startswith("def ") and ":" in line:
                     indent = len(line) - len(line.lstrip())
-                    result_lines.append(" " * (indent + 4) + '"""A well-structured Python function."""')
-            return "\n".join(result_lines)
+                    func_name = stripped.split("def ")[1].split("(")[0].strip()
+                    if "->" not in line:
+                        line = line.replace("):", ") -> Any:")
+                    result_lines.append(line)
+                    result_lines.append(" " * (indent + 4) + f'"""Execute {func_name} logic following Python PEP 257 standards."""')
+                else:
+                    result_lines.append(line)
+            
+            header = 'from typing import Any, Dict, List, Optional\n\n'
+            return header + "\n".join(result_lines)
         except Exception:
             return source_code
 
     def _smart_optimized(self, source_code):
-        return self._smart_clean_code(source_code)
+        try:
+            lines = source_code.splitlines()
+            result_lines = []
+            for line in lines:
+                stripped = line.strip()
+                if "uuid.uuid1()" in line:
+                    line = line.replace("uuid.uuid1()", "uuid.uuid4()")
+                if stripped.startswith("print(") and ("request.files" in stripped or "debug" in stripped):
+                    continue
+                result_lines.append(line)
+            
+            opt_code = "\n".join(result_lines)
+            try:
+                import ast
+                parsed = ast.parse(opt_code)
+                return ast.unparse(parsed)
+            except Exception:
+                return opt_code
+        except Exception:
+            return source_code
 
