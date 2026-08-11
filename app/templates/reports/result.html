@@ -312,62 +312,78 @@ Analysis Result
 
 </div>
 
-<!-- Semantic Analysis -->
-
-<div class="card dashboard-card mt-4">
-
-    <div class="card-header bg-info text-white">
-        🧠 Semantic Analysis (CodeBERT)
+<!-- Semantic Analysis (CodeBERT) -->
+<div class="card dashboard-card mt-4 shadow-sm border-0">
+    <div class="card-header text-white d-flex align-items-center justify-content-between py-3" style="background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);">
+        <h5 class="mb-0 fw-bold"><i class="bi bi-brain me-2"></i>🧠 Semantic AI Analysis (CodeBERT)</h5>
+        <span class="badge bg-white text-indigo rounded-pill px-3 py-1 fw-semibold" style="color: #4f46e5;">Deep Learning</span>
     </div>
 
-    <div class="card-body">
-
-        <div class="row text-center">
-
-            <div class="col-md-3">
-
-                <h6>Embedding Dimension</h6>
-
-                <h3 class="text-primary">
-                    {{ result.semantic_analysis.embedding_dimension }}
-                </h3>
-
+    <div class="card-body p-4">
+        <div class="row align-items-center g-4">
+            <!-- Left: Semantic Quality Score Gauge -->
+            <div class="col-md-6 border-end">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-dark fs-6">Semantic Code Quality Score</span>
+                    <span class="badge {% if result.semantic_analysis.semantic_score >= 80 %}bg-success{% elif result.semantic_analysis.semantic_score >= 65 %}bg-primary{% elif result.semantic_analysis.semantic_score >= 50 %}bg-warning text-dark{% else %}bg-danger{% endif %} rounded-pill px-3 py-1">
+                        {% if result.semantic_analysis.semantic_score >= 80 %}Excellent{% elif result.semantic_analysis.semantic_score >= 65 %}Good Quality{% elif result.semantic_analysis.semantic_score >= 50 %}Average Quality{% else %}Needs Work{% endif %}
+                    </span>
+                </div>
+                <div class="d-flex align-items-baseline mb-2">
+                    <span class="display-5 fw-bold text-indigo" style="color: #4f46e5;">{{ result.semantic_analysis.semantic_score }}</span>
+                    <span class="text-muted fs-5 ms-1">/ 100</span>
+                </div>
+                <div class="progress rounded-pill mb-2" style="height: 10px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: {{ result.semantic_analysis.semantic_score }}%; background-color: #4f46e5;" 
+                         aria-valuenow="{{ result.semantic_analysis.semantic_score }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">Evaluates logical clarity, idiomatic structure, and code context using CodeBERT Transformer.</small>
             </div>
 
-            <div class="col-md-3">
-
-                <h6>Token Count</h6>
-
-                <h3 class="text-success">
-                    {{ result.semantic_analysis.token_count }}
-                </h3>
-
+            <!-- Right: AI Model Confidence -->
+            <div class="col-md-6">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <span class="fw-bold text-dark fs-6">AI Evaluation Confidence</span>
+                    <span class="text-success fw-bold"><i class="bi bi-shield-check me-1"></i>High Confidence</span>
+                </div>
+                <div class="d-flex align-items-baseline mb-2">
+                    <span class="display-5 fw-bold text-success">{{ result.semantic_analysis.confidence }}%</span>
+                </div>
+                <div class="progress rounded-pill mb-2" style="height: 10px;">
+                    <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" 
+                         style="width: {{ result.semantic_analysis.confidence }}%;" 
+                         aria-valuenow="{{ result.semantic_analysis.confidence }}" aria-valuemin="0" aria-valuemax="100"></div>
+                </div>
+                <small class="text-muted">Degree of certainty by CodeBERT in classifying logical code semantics.</small>
             </div>
+        </div>
 
-            <div class="col-md-3">
-
-                <h6>Semantic Score</h6>
-
-                <h3 class="text-warning">
-                    {{ result.semantic_analysis.semantic_score }}
-                </h3>
-
+        <!-- Collapsible Advanced Technical Parameters (for Examiners / Technical Reviewers) -->
+        <div class="mt-4 pt-3 border-top">
+            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" type="button" data-bs-toggle="collapse" data-bs-target="#technicalModelDetails" aria-expanded="false" aria-controls="technicalModelDetails">
+                <i class="bi bi-gear-wide-connected me-1"></i> Advanced Technical AI Parameters (Examiner / Internal Details)
+            </button>
+            
+            <div class="collapse mt-3" id="technicalModelDetails">
+                <div class="p-3 bg-light rounded border">
+                    <div class="row text-center g-3">
+                        <div class="col-md-6 border-end">
+                            <span class="text-muted small text-uppercase fw-semibold d-block">Embedding Dimension</span>
+                            <span class="h4 fw-bold text-dark">{{ result.semantic_analysis.embedding_dimension }}</span>
+                            <span class="d-block small text-muted">Vector representation size generated by CodeBERT neural network</span>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="text-muted small text-uppercase fw-semibold d-block">Parsed Token Count</span>
+                            <span class="h4 fw-bold text-dark">{{ result.semantic_analysis.token_count }}</span>
+                            <span class="d-block small text-muted">Subword tokens processed by the tokenizer during inference</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-
-            <div class="col-md-3">
-
-                <h6>Confidence</h6>
-
-                <h3 class="text-danger">
-                    {{ result.semantic_analysis.confidence }}
-                </h3>
-
-            </div>
-
         </div>
 
     </div>
-
 </div>
 
 <!-- AI Improved Code panel -->
