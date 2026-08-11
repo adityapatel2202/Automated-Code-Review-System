@@ -23,10 +23,14 @@ def admin_login():
             logout_user()
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip()
+        email_or_user = request.form.get("email", "").strip().lower()
         password = request.form.get("password", "").strip()
 
-        user = User.query.filter_by(email=email).first()
+        from sqlalchemy import func
+        user = User.query.filter(
+            (func.lower(User.email) == email_or_user) | 
+            (func.lower(User.username) == email_or_user)
+        ).first()
 
         if user and user.check_password(password):
             if getattr(user, "role", "user") != "admin":
