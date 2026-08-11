@@ -33,6 +33,11 @@ class User(UserMixin, db.Model):
     def is_active(self):
         return self.status == "active"
 
+    @property
+    def upload_count(self):
+        from app.models.review import Review
+        return Review.query.filter_by(user_id=self.id).count()
+
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 

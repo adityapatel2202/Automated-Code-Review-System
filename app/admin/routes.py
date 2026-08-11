@@ -117,7 +117,7 @@ def get_registered_users_json():
             "role": u.role,
             "status": u.status,
             "created_at": u.created_at.strftime("%Y-%m-%d %H:%M:%S") if u.created_at else "N/A",
-            "total_uploads": u.reviews.count()
+            "total_uploads": u.upload_count
         })
 
     return jsonify({
@@ -200,7 +200,7 @@ def get_user_json(user_id):
         "status": user.status,
         "created_at": user.created_at.strftime("%Y-%m-%d %H:%M:%S") if user.created_at else "N/A",
         "last_login": user.last_login.strftime("%Y-%m-%d %H:%M:%S") if user.last_login else "Never",
-        "total_uploads": user.reviews.count()
+        "total_uploads": user.upload_count
     })
 
 
