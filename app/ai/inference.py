@@ -49,24 +49,26 @@ class CodeT5Inference:
                 return_tensors="pt",
             )
 
-            # Generate
-            if self.is_causal:
-                output_ids = self.model.generate(
-                    inputs["input_ids"],
-                    max_new_tokens=max_length,
-                    do_sample=False,
-                    pad_token_id=self.tokenizer.eos_token_id
-                )
-                # Slice out prompt tokens
-                generated_ids = output_ids[0][inputs["input_ids"].shape[1]:]
-            else:
-                output_ids = self.model.generate(
-                    inputs["input_ids"],
-                    num_beams=4,
-                    max_length=max_length,
-                    early_stopping=True,
-                )
-                generated_ids = output_ids[0]
+            import torch
+            with torch.no_grad():
+                # Generate
+                if self.is_causal:
+                    output_ids = self.model.generate(
+                        inputs["input_ids"],
+                        max_new_tokens=min(max_length, 128),
+                        do_sample=False,
+                        pad_token_id=self.tokenizer.eos_token_id
+                    )
+                    # Slice out prompt tokens
+                    generated_ids = output_ids[0][inputs["input_ids"].shape[1]:]
+                else:
+                    output_ids = self.model.generate(
+                        inputs["input_ids"],
+                        num_beams=2,
+                        max_length=min(max_length, 128),
+                        early_stopping=True,
+                    )
+                    generated_ids = output_ids[0]
 
             generated_text = self.tokenizer.decode(
                 generated_ids,
