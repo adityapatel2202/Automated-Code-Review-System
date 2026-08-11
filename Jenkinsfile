@@ -28,7 +28,7 @@ pipeline {
                 sh '''
                     python3 -m venv --system-site-packages venv
                     . venv/bin/activate
-                    pip install -r requirements.txt --no-cache-dir
+                    pip install -r requirements.txt
                 '''
             }
         }
@@ -62,26 +62,6 @@ pipeline {
                     sh '''
                         # Authorize Security Group ingress rule for DB access from EC2
                         aws ec2 authorize-security-group-ingress --group-id sg-09e583b8dce41580a --protocol tcp --port 5432 --source-group sg-024dffcf930c79d0f --region ${AWS_DEFAULT_REGION} || true
-
-                        # Modify RDS Database master password to 'password' using boto3 (workaround for AWS CLI Python 3.14 help parsing bug)
-                        . venv/bin/activate
-                        pip install boto3 --no-cache-dir
-                        python3 -c "
-import boto3
-try:
-    client = boto3.client('rds', region_name='${AWS_DEFAULT_REGION}')
-    client.modify_db_instance(
-        DBInstanceIdentifier='code-review-db',
-        MasterUserPassword='password',
-        ApplyImmediately=True
-    )
-    print('=== RDS MASTER PASSWORD MODIFIED VIA BOTO3 ===')
-except Exception as e:
-    print('FAILED to modify RDS password:', e)
-"
-                        # Sleep to allow RDS password modification to apply
-                        echo "Waiting 30 seconds for RDS password modification to propagate..."
-                        sleep 30
 
                         # Ensure ECR repository exists
                         aws ecr create-repository --repository-name ${ECR_REPO_NAME} --region ${AWS_DEFAULT_REGION} || true
