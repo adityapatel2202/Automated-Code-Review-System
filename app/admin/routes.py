@@ -215,6 +215,9 @@ def disable_user(user_id):
         return jsonify({"success": False, "error": "You cannot disable your own admin account."}), 400
 
     user = User.query.get_or_404(user_id)
+    if user.role == "admin":
+        return jsonify({"success": False, "error": "Admin accounts are protected and cannot be disabled."}), 403
+
     user.status = "disabled"
     db.session.commit()
     return jsonify({"success": True, "message": f"User '{user.username}' has been disabled."})
@@ -236,6 +239,9 @@ def delete_user(user_id):
         return jsonify({"success": False, "error": "You cannot delete your own admin account."}), 400
 
     user = User.query.get_or_404(user_id)
+    if user.role == "admin":
+        return jsonify({"success": False, "error": "Admin accounts are protected and cannot be deleted."}), 403
+
     username = user.username
 
     Review.query.filter_by(user_id=user_id).delete()
