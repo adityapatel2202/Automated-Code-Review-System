@@ -123,10 +123,19 @@ class CodeImprover:
     # ------------------------------------------------------------------
 
     def _safe_generate(self, prompt, fallback, system_prompt=None):
-        """Run inference; return *fallback* if anything goes wrong."""
+        """Run inference; verify syntax completeness; return fallback if invalid or incomplete."""
         try:
-            result = self.inference.generate(prompt, max_length=256, system_prompt=system_prompt)
-            return result if result and result.strip() else fallback
+            result = self.inference.generate(prompt, max_length=512, system_prompt=system_prompt)
+            if not result or not result.strip():
+                return fallback
+            
+            import ast
+            try:
+                ast.parse(result)
+                return result
+            except SyntaxError:
+                # If generated code was cut off midway, return complete smart fallback
+                return fallback
         except Exception as e:
             print(f"[CodeImprover] Generation error: {e}")
             return fallback
@@ -143,6 +152,11 @@ class CodeImprover:
         try:
             lines = source_code.splitlines()
             result_lines = []
+            has_typing = "from typing import" in source_code or "import typing" in source_code
+            if not has_typing:
+                result_lines.append("from typing import Any, Dict, List, Optional, Tuple")
+                result_lines.append("")
+
             for line in lines:
                 stripped = line.strip()
                 if stripped.startswith("def ") and ":" in line:
@@ -151,12 +165,19 @@ class CodeImprover:
                     if "->" not in line:
                         line = line.replace("):", ") -> Any:")
                     result_lines.append(line)
-                    result_lines.append(" " * (indent + 4) + f'"""Execute {func_name} logic following Python PEP 257 standards."""')
+                    result_lines.append(" " * (indent + 4) + f'"""Execute {func_name} following PEP 257 docstring & PEP 484 type hinting standards."""')
+                elif stripped.startswith("except:") or stripped == "except :":
+                    indent = len(line) - len(line.lstrip())
+                    result_lines.append(" " * indent + "except Exception as e:")
                 else:
                     result_lines.append(line)
-            
-            header = 'from typing import Any, Dict, List, Optional\n\n'
-            return header + "\n".join(result_lines)
+
+            formatted = "\n".join(result_lines)
+            try:
+                import ast
+                return ast.unparse(ast.parse(formatted))
+            except Exception:
+                return formatted
         except Exception:
             return source_code
 
@@ -168,10 +189,10 @@ class CodeImprover:
                 stripped = line.strip()
                 if "uuid.uuid1()" in line:
                     line = line.replace("uuid.uuid1()", "uuid.uuid4()")
-                if stripped.startswith("print(") and ("request.files" in stripped or "debug" in stripped):
+                if stripped.startswith("print(") and ("debug" in stripped.lower() or "request.files" in stripped or "starting" in stripped.lower()):
                     continue
                 result_lines.append(line)
-            
+
             opt_code = "\n".join(result_lines)
             try:
                 import ast

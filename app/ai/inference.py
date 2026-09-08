@@ -55,7 +55,7 @@ class CodeT5Inference:
                 if self.is_causal:
                     output_ids = self.model.generate(
                         inputs["input_ids"],
-                        max_new_tokens=min(max_length, 128),
+                        max_new_tokens=min(max_length, 512),
                         do_sample=False,
                         pad_token_id=self.tokenizer.eos_token_id
                     )
@@ -65,7 +65,7 @@ class CodeT5Inference:
                     output_ids = self.model.generate(
                         inputs["input_ids"],
                         num_beams=2,
-                        max_length=min(max_length, 128),
+                        max_length=min(max_length, 512),
                         early_stopping=True,
                     )
                     generated_ids = output_ids[0]
