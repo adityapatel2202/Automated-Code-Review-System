@@ -28,5 +28,4 @@ COPY . .
 EXPOSE 5000
 
 # Run database setup & column migrations and launch production server with gunicorn
-CMD python init_db.py && \
-    gunicorn --bind 0.0.0.0:5000 --timeout 120 "run:app"
+CMD ["sh", "-c", "python init_db.py && gunicorn --bind 0.0.0.0:${PORT:-5000} --timeout 120 run:app"]
