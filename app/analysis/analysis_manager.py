@@ -16,9 +16,30 @@ class AnalysisManager:
         self.suggestion = SuggestionEngine()
         self.score = ScoreCalculator()
         self.reader = CodeReader()
-        self.ai = AIService()
-        self.semantic = SemanticAnalyzer()
-        self.predictor = QualityPredictor()
+        self._ai = None
+        self._semantic = None
+        self._predictor = None
+
+    @property
+    def ai(self):
+        if self._ai is None:
+            from app.ai.ai_service import AIService
+            self._ai = AIService()
+        return self._ai
+
+    @property
+    def semantic(self):
+        if self._semantic is None:
+            from app.semantic.semantic_analyzer import SemanticAnalyzer
+            self._semantic = SemanticAnalyzer()
+        return self._semantic
+
+    @property
+    def predictor(self):
+        if self._predictor is None:
+            from app.ml.predictor import QualityPredictor
+            self._predictor = QualityPredictor()
+        return self._predictor
 
     def analyze(self, file_path):
 
